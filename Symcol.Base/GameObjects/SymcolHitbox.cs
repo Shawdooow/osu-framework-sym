@@ -24,21 +24,24 @@ namespace Symcol.Base.GameObjects
             get => shape;
             set
             {
-                if (value != shape)
-                {
-                    shape = value;
+                if (value == shape) return;
 
-                    if (value == Shape.Circle)
+                shape = value;
+                switch (value)
+                {
+                    case Shape.Circle:
                         Child = new Container
                         {
                             RelativeSizeAxes = Axes.Both,
                             CornerRadius = Width / 2
                         };
-                    else if (value == Shape.Rectangle)
+                        break;
+                    case Shape.Rectangle:
                         Child = new Container
                         {
                             RelativeSizeAxes = Axes.Both
                         };
+                        break;
                 }
             }
 
@@ -54,8 +57,11 @@ namespace Symcol.Base.GameObjects
             Shape = shape;
         }
 
-        public bool HitDetect(SymcolHitbox hitbox1, SymcolHitbox hitbox2)
+        public bool HitDetect(SymcolHitbox hitbox1, SymcolHitbox hitbox2 = null)
         {
+            if (hitbox2 == null)
+                hitbox2 = this;
+
             if (hitbox1.HitDetection && hitbox2.HitDetection && hitbox1.Team != hitbox2.Team)
             {
                 if (hitbox1.Shape == Shape.Circle && hitbox2.Shape == Shape.Circle)
