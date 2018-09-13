@@ -1,4 +1,6 @@
-﻿using Symcol.Base.Graphics.Containers;
+﻿using osu.Framework.Graphics;
+using osu.Framework.Graphics.Containers;
+using Symcol.Base.Graphics.Containers;
 
 namespace Symcol.Base.GameObjects
 {

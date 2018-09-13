@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\..\THSharp.Game.props" />
+  <Import Project="..\Symcol.Core.props" />
   <PropertyGroup Label="Project">
     <TargetFramework>netstandard2.0</TargetFramework>
     <OutputType>Library</OutputType>
@@ -8,6 +8,6 @@
     <Description>symcol networking tools</Description>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Symcol.Core\Symcol.Core.csproj" />
+    <ProjectReference Include="..\Symcol.Base\Symcol.Base.csproj" />
   </ItemGroup>
 </Project>

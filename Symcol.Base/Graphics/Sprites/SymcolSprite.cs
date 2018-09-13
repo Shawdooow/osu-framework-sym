@@ -1,4 +1,7 @@
-﻿namespace Symcol.Base.Graphics.Sprites
+﻿using osu.Framework.Graphics.Containers;
+using osu.Framework.Graphics.Sprites;
+
+namespace Symcol.Base.Graphics.Sprites
 {
     public class SymcolSprite : Sprite
     {

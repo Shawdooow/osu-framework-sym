@@ -1,4 +1,6 @@
-﻿namespace Symcol.Base.Graphics.Containers
+﻿using osu.Framework.Graphics.Containers;
+
+namespace Symcol.Base.Graphics.Containers
 {
     public class SymcolBufferedContainer : BufferedContainer
     {

@@ -1,4 +1,6 @@
 ﻿using System;
+using osu.Framework.Graphics;
+using osu.Framework.Input.States;
 using OpenTK;
 
 namespace Symcol.Base.Graphics.Containers

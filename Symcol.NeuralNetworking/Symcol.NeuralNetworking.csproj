@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\..\THSharp.Game.props" />
+  <Import Project="..\Symcol.Core.props" />
   <PropertyGroup Label="Project">
     <TargetFramework>netstandard2.0</TargetFramework>
     <OutputType>Library</OutputType>
@@ -11,7 +11,7 @@
     <PackageReference Include="TensorFlowSharp" Version="1.8.0-pre1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Symcol.Core\Symcol.Core.csproj" />
+    <ProjectReference Include="..\Symcol.Base\Symcol.Base.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="libtensorflow.dll">
