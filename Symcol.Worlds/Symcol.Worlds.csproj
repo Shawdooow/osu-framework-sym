@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\Symcol.Core.props" />
+  <PropertyGroup Label="Project">
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>world stuff stolen from eden</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Symcol.IO\Symcol.IO.csproj" />
+  </ItemGroup>
+</Project>
