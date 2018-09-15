@@ -8,5 +8,6 @@
     <Description>dank io for the framework</Description>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Symcol.Base\Symcol.Base.csproj" />
   </ItemGroup>
 </Project>
