@@ -1,125 +1,49 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Newtonsoft.Json;
+using System.IO;
 using osu.Framework.Allocation;
-using osu.Framework.Graphics;
-using osu.Framework.Graphics.Containers;
-using osu.Framework.Graphics.Textures;
-using OpenTK;
-using Symcol.IO.JSON;
-using Symcol.Worlds.Chunks;
-using Symcol.Worlds.IO;
-using Symcol.Worlds.Tiles;
+using osu.Framework.Logging;
+using osu.Framework.Platform;
+using Symcol.Base.Graphics.Containers;
 
 namespace Symcol.Worlds.Worlds
 {
-    [JsonObject(MemberSerialization.OptIn)]
-    public class World : Container
+    public abstract class World : SymcolContainer
     {
-        private JsonStore jsonStore;
-        private TextureStore textureStore;
+        public virtual string FileExtension => ".world";
 
-        private string atlasPath;
+        public abstract void DeSerialize(string worldSerial);
 
-        public string WorldName;
+        public abstract void Serialize();
 
-        [JsonProperty("sprites")]
-        public string AtlasPath
-        {
-            get => Atlas?.Filename ?? atlasPath;
-            set
-            {
-                atlasPath = value;
-                if (jsonStore != null) createAtlas(value);
-            }
-        }
-
-        public TileAtlas Atlas { get; private set; }
-
-        [JsonProperty("spawns")]
-        public List<Vector2> Spawns = new List<Vector2>();
-
-        [JsonProperty]
-        private Chunk[,] chunks = new Chunk[0, 0];
+        protected Storage Storage { get; private set; }
 
         [BackgroundDependencyLoader]
-        private void load(JsonStore store, TileStore tiles)
+        private void load(Storage storage)
         {
-            AutoSizeAxes = Axes.Both;
-            jsonStore = store;
-            textureStore = tiles;
-            for (var x = 0; x < chunks.GetLength(0); x++)
-            for (var y = 0; y < chunks.GetLength(1); y++)
-            {
-                var chunk = chunks[x, y];
-                chunk.Position = new Vector2(x, y) * Chunk.CHUNK_SIZE;
-                Add(chunk);
-            }
-
-            if (atlasPath != null)
-                createAtlas(atlasPath);
+            Storage = storage;
         }
 
-        private void createAtlas(string filename)
+        public virtual string Load(string fileName)
         {
-            Atlas = new TileAtlas(textureStore, jsonStore, filename);
-            foreach (var chunk in chunks)
-                chunk.Atlas = Atlas; //also update the sprites
+            if (string.IsNullOrEmpty(fileName)) return null;
+            fileName = fileName + FileExtension;
+
+            try
+            {
+                using (Stream stream = Storage.GetStream(fileName, FileAccess.Read, FileMode.Open))
+                using (StreamReader r = new StreamReader(stream))
+                    return r.ReadLine();
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e, "Failed to load world from file");
+                return null;
+            }
         }
 
-        /// <summary>
-        /// Resize this world to the specified size.
-        /// Size is measured in chunks
-        /// </summary>
-        /// <param name="width">Chunks on the x axis</param>
-        /// <param name="height">Chunks on the y axis</param>
-        public void ResizeWorld(int width, int height)
+        public virtual void Save(string fileName)
         {
-            if (!IsAlive) //The world isn't loaded and the chunks aren't setup yet
-            {
-                Schedule(() => ResizeWorld(width, height));
-                return;
-            }
-
-            var oldChunks = chunks;
-            chunks = new Chunk[width, height];
-
-            for (var x = 0; x < chunks.GetLength(0); x++)
-            {
-                for (var y = 0; y < chunks.GetLength(1); y++)
-                {
-                    if (oldChunks.GetLength(0) > x && oldChunks.GetLength(1) > y)
-                        chunks[x, y] = oldChunks[x, y];
-                    else
-                    {
-                        var chunk = new Chunk
-                        {
-                            Position = new Vector2(x, y) * Chunk.CHUNK_SIZE,
-                            Atlas = Atlas
-                        };
-                        Add(chunk);
-                        chunks[x, y] = chunk;
-                    }
-                }
-            }
-
-            RemoveRange(oldChunks.Cast<Chunk>().Except(chunks.Cast<Chunk>()));
-        }
-
-        public Chunk GetChunk(int x, int y) => chunks[x, y];
-
-        /// <summary>
-        /// Size of this world in chunks
-        /// </summary>
-        public Vector2 ChunkSize => new Vector2(chunks.GetLength(0), chunks.GetLength(1));
-
-        public void Save()
-        {
-            if (String.IsNullOrEmpty(WorldName))
-                throw new InvalidOperationException(nameof(WorldName) + " is null or empty and can therefore not be saved");
-
-            jsonStore.Serialize(WorldName, this);
+            
         }
     }
 }
