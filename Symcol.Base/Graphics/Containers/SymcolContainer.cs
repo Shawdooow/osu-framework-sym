@@ -1,8 +1,14 @@
-﻿using osu.Framework.Graphics.Containers;
+﻿using osu.Framework.Graphics;
+using osu.Framework.Graphics.Containers;
 
 namespace Symcol.Base.Graphics.Containers
 {
-    public class SymcolContainer : Container
+    public class SymcolContainer : SymcolContainer<Drawable>
+    {
+    }
+
+    public class SymcolContainer<T> : Container<T>
+        where T : Drawable
     {
         private bool disposed;
 

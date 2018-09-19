@@ -4,7 +4,6 @@ using System.Linq;
 using Newtonsoft.Json;
 using osu.Framework.Allocation;
 using osu.Framework.Graphics;
-using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Textures;
 using OpenTK;
 using Symcol.IO.JSON;
@@ -12,7 +11,7 @@ using Symcol.Worlds.Chunks;
 using Symcol.Worlds.IO;
 using Symcol.Worlds.Tiles;
 
-namespace Symcol.Worlds.Worlds
+namespace Symcol.Worlds.Worlds.JSON
 {
     [JsonObject(MemberSerialization.OptIn)]
     public class JSONWorld : World
@@ -120,6 +119,16 @@ namespace Symcol.Worlds.Worlds
                 throw new InvalidOperationException(nameof(WorldName) + " is null or empty and can therefore not be saved");
 
             jsonStore.Serialize(WorldName, this);
+        }
+
+        public override void DeSerialize(string worldSerial)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override string Serialize()
+        {
+            throw new NotImplementedException();
         }
     }
 }

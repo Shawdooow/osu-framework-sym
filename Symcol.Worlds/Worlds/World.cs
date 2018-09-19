@@ -13,7 +13,7 @@ namespace Symcol.Worlds.Worlds
 
         public abstract void DeSerialize(string worldSerial);
 
-        public abstract void Serialize();
+        public abstract string Serialize();
 
         protected Storage Storage { get; private set; }
 
@@ -43,7 +43,20 @@ namespace Symcol.Worlds.Worlds
 
         public virtual void Save(string fileName)
         {
-            
+            if (string.IsNullOrEmpty(fileName)) return;
+            fileName = fileName + FileExtension;
+
+            try
+            {
+                using (Stream stream = Storage.GetStream(fileName, FileAccess.Write, FileMode.Create))
+                using (StreamWriter w = new StreamWriter(stream))
+                    w.WriteLine(Serialize());
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e, "Failed to save world to file");
+                return;
+            }
         }
     }
 }
