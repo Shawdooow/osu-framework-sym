@@ -5,7 +5,7 @@ using OpenTK.Input;
 
 namespace Symcol.Base.Graphics.Containers
 {
-    public class SymcolDragContainer : SymcolContainer
+    public class DragContainer : SymcolContainer
     {
         protected override bool OnDragStart(InputState state) => true;
 
@@ -21,10 +21,10 @@ namespace Symcol.Base.Graphics.Containers
             startPosition = Position;
 
             if (args.Button == MouseButton.Left && AllowLeftClickDrag)
-                leftDown = true;
+                return leftDown = true;
 
             if (args.Button == MouseButton.Right)
-                rightDown = true;
+                return rightDown = true;
 
             return base.OnMouseDown(state, args);
         }
@@ -40,10 +40,16 @@ namespace Symcol.Base.Graphics.Containers
         protected override bool OnMouseUp(InputState state, MouseUpEventArgs args)
         {
             if (args.Button == MouseButton.Left && AllowLeftClickDrag)
+            {
                 leftDown = false;
+                return true;
+            }
 
             if (args.Button == MouseButton.Right)
+            {
                 rightDown = false;
+                return true;
+            }
 
             return base.OnMouseUp(state, args);
         }

@@ -5,7 +5,7 @@ using OpenTK;
 
 namespace Symcol.Base.Graphics.Containers
 {
-    public class SymcolDialContainer : SymcolCircularContainer
+    public class DialContainer : SymcolCircularContainer
     {
         public override bool ReceiveMouseInputAt(Vector2 screenSpacePos) => true;
 
