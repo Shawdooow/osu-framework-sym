@@ -31,7 +31,7 @@ namespace Symcol.Base.Graphics.Containers
 
         protected override bool OnDrag(InputState state)
         {
-            if (leftDown | rightDown)
+            if (leftDown || rightDown)
                 Position = startPosition + state.Mouse.Position - state.Mouse.PositionMouseDown.GetValueOrDefault();
 
             return base.OnDrag(state);

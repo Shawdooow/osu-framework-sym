@@ -11,8 +11,16 @@ namespace Symcol.Worlds.Worlds
     {
         public virtual string FileExtension => ".world";
 
+        /// <summary>
+        /// Converts worldSerial to the world
+        /// </summary>
+        /// <param name="worldSerial"></param>
         public abstract void DeSerialize(string worldSerial);
 
+        /// <summary>
+        /// Serializes the current world
+        /// </summary>
+        /// <returns></returns>
         public abstract string Serialize();
 
         protected Storage Storage { get; private set; }
@@ -23,14 +31,18 @@ namespace Symcol.Worlds.Worlds
             Storage = storage;
         }
 
-        public virtual string Load(string fileName)
+        /// <summary>
+        /// Gets a world serial from specifiecd file
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public virtual string GetSerialFromFile(string fileName)
         {
             if (string.IsNullOrEmpty(fileName)) return null;
-            fileName = fileName + FileExtension;
 
             try
             {
-                using (Stream stream = Storage.GetStream(fileName, FileAccess.Read, FileMode.Open))
+                using (Stream stream = Storage.GetStream(fileName + FileExtension, FileAccess.Read, FileMode.Open))
                 using (StreamReader r = new StreamReader(stream))
                     return r.ReadLine();
             }
@@ -41,14 +53,17 @@ namespace Symcol.Worlds.Worlds
             }
         }
 
-        public virtual void Save(string fileName)
+        /// <summary>
+        /// Saves a Serialized world to file
+        /// </summary>
+        /// <param name="fileName"></param>
+        public virtual void SaveToFile(string fileName)
         {
             if (string.IsNullOrEmpty(fileName)) return;
-            fileName = fileName + FileExtension;
 
             try
             {
-                using (Stream stream = Storage.GetStream(fileName, FileAccess.Write, FileMode.Create))
+                using (Stream stream = Storage.GetStream(fileName + FileExtension, FileAccess.Write, FileMode.Create))
                 using (StreamWriter w = new StreamWriter(stream))
                     w.WriteLine(Serialize());
             }
