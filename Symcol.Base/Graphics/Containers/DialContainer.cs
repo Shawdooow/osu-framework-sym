@@ -7,7 +7,7 @@ namespace Symcol.Base.Graphics.Containers
 {
     public class DialContainer : SymcolCircularContainer
     {
-        public override bool ReceiveMouseInputAt(Vector2 screenSpacePos) => true;
+        public override bool ReceivePositionalInputAt(Vector2 screenSpacePos) => true;
 
         private Vector2 mousePosition;
 
