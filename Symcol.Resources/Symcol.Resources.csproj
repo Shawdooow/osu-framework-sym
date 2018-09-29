@@ -5,14 +5,16 @@
     <OutputType>Library</OutputType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Description>core symcol 3D framework tools</Description>
-  </PropertyGroup>
-  <PropertyGroup>
-    <RootNamespace>Symcol._3D</RootNamespace>
-    <AssemblyName>Symcol._3D</AssemblyName>
+    <Description>core symcol resources</Description>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\osu-framework\osu.Framework\osu.Framework.csproj" />
-    <ProjectReference Include="..\Symcol.Resources\Symcol.Resources.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Textures\**\*" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Textures\" />
+    <Folder Include="Shaders\" />
   </ItemGroup>
 </Project>
