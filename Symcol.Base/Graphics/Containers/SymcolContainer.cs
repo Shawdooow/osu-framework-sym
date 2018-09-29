@@ -16,12 +16,7 @@ namespace Symcol.Base.Graphics.Containers
                 p.Remove(this);
 
             Dispose();
-        }
-
-        protected override void Dispose(bool isDisposing)
-        {
             disposed = true;
-            base.Dispose(isDisposing);
         }
 
         public override bool UpdateSubTree()
@@ -46,12 +41,7 @@ namespace Symcol.Base.Graphics.Containers
                 p.Remove(this);
 
             Dispose();
-        }
-
-        protected override void Dispose(bool isDisposing)
-        {
             disposed = true;
-            base.Dispose(isDisposing);
         }
 
         public override bool UpdateSubTree()

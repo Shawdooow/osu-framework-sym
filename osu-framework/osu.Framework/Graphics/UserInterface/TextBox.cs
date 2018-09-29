@@ -33,7 +33,7 @@ namespace osu.Framework.Graphics.UserInterface
         protected Drawable Caret;
         protected Container TextContainer;
 
-        public override bool HandleKeyboardInput => HasFocus;
+        public override bool HandleNonPositionalInput => HasFocus;
 
         /// <summary>
         /// Padding to be used within the TextContainer. Requires special handling due to the sideways scrolling of text content.
@@ -57,7 +57,8 @@ namespace osu.Framework.Graphics.UserInterface
         //represents the left/right selection coordinates of the word double clicked on when dragging
         private int[] doubleClickWord;
 
-        private AudioManager audio;
+        [Resolved]
+        private AudioManager audio { get; set; }
 
         /// <summary>
         /// Whether this TextBox should accept left and right arrow keys for navigation.
@@ -129,10 +130,8 @@ namespace osu.Framework.Graphics.UserInterface
         }
 
         [BackgroundDependencyLoader]
-        private void load(GameHost host, AudioManager audio)
+        private void load(GameHost host)
         {
-            this.audio = audio;
-
             textInput = host.GetTextInput();
             clipboard = host.GetClipboard();
 
@@ -505,6 +504,11 @@ namespace osu.Framework.Graphics.UserInterface
             foreach (char c in addText)
             {
                 var ch = addCharacter(c);
+                if (ch == null)
+                {
+                    notifyInputError();
+                    continue;
+                }
 
                 var col = (Color4)ch.Colour;
                 ch.FadeColour(col.Opacity(0)).FadeColour(col, caret_move_time * 2, Easing.Out);
@@ -521,10 +525,7 @@ namespace osu.Framework.Graphics.UserInterface
 
             if (text.Length + 1 > LengthLimit)
             {
-                if (Background.Alpha > 0)
-                    Background.FlashColour(Color4.Red, 200);
-                else
-                    TextFlow.FlashColour(Color4.Red, 200);
+                notifyInputError();
                 return null;
             }
 
@@ -536,6 +537,14 @@ namespace osu.Framework.Graphics.UserInterface
             cursorAndLayout.Invalidate();
 
             return ch;
+        }
+
+        private void notifyInputError()
+        {
+            if (Background.Alpha > 0)
+                Background.FlashColour(Color4.Red, 200);
+            else
+                TextFlow.FlashColour(Color4.Red, 200);
         }
 
         protected virtual SpriteText CreatePlaceholder() => new SpriteText

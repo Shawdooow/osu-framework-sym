@@ -32,7 +32,7 @@ namespace Symcol.NeuralNetworking
         }
 
         #region Input Handling
-        public override bool ReceiveMouseInputAt(Vector2 screenSpacePos) => true;
+        public override bool ReceivePositionalInputAt(Vector2 screenSpacePos) => true;
 
         public bool OnPressed(T action)
         {

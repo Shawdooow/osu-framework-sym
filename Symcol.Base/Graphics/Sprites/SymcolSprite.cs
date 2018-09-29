@@ -5,8 +5,8 @@ namespace Symcol.Base.Graphics.Sprites
 {
     public class SymcolSprite : Sprite
     {
-        public override bool HandleMouseInput => false;
-        public override bool HandleKeyboardInput => false;
+        public override bool HandleNonPositionalInput => false;
+        public override bool HandlePositionalInput => false;
 
         private bool disposed;
 
