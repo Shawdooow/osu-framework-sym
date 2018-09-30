@@ -2,9 +2,9 @@
 using osu.Framework.Graphics.Containers;
 using Symcol.Base.Graphics.Containers;
 
-namespace Symcol.Base.GameObjects
+namespace Symcol.Base.Game
 {
-    public class SymcolHitbox : SymcolContainer
+    public class Hitbox : SymcolContainer
     {
         /// <summary>
         /// whether we want to do hit detection
@@ -49,7 +49,7 @@ namespace Symcol.Base.GameObjects
 
         private Shape shape = Shape.Complex;
 
-        public SymcolHitbox(Shape shape = Shape.Circle)
+        public Hitbox(Shape shape = Shape.Circle)
         {
             Anchor = Anchor.Centre;
             Origin = Anchor.Centre;
@@ -57,7 +57,7 @@ namespace Symcol.Base.GameObjects
             Shape = shape;
         }
 
-        public bool HitDetect(SymcolHitbox hitbox1, SymcolHitbox hitbox2 = null)
+        public bool HitDetect(Hitbox hitbox1, Hitbox hitbox2 = null)
         {
             if (hitbox2 == null)
                 hitbox2 = this;
