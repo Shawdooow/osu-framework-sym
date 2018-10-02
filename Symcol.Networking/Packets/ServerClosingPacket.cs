@@ -5,6 +5,6 @@ namespace Symcol.Networking.Packets
     [Serializable]
     public class ServerClosingPacket : Packet
     {
-        public override int PacketSize => 256;
+        public override uint PacketSize => 256;
     }
 }

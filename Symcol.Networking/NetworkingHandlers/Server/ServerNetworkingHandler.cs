@@ -15,6 +15,19 @@ namespace Symcol.Networking.NetworkingHandlers.Server
         /// </summary>
         public readonly List<Client> Clients = new List<Client>();
 
+        protected virtual Client CreateConnectingClient(ConnectPacket connectPacket)
+        {
+            Client c = new Client
+            {
+                EndPoint = new IPEndPoint(IPAddress.Parse(NetworkingClient.EndPoint.Address.ToString()), NetworkingClient.EndPoint.Port),
+                LastConnectionTime = Time.Current,
+                Statues = ConnectionStatues.Connecting
+            };
+            c.OnDisconnected += () => Clients.Remove(c);
+
+            return c;
+        }
+
         #endregion
 
         public ServerNetworkingHandler()
@@ -42,7 +55,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
             switch (packet)
             {
                 case ConnectPacket connectPacket:
-                    Clients.Add(GenerateConnectingClient());
+                    Clients.Add(CreateConnectingClient(connectPacket));
                     SendToClient(new ConnectedPacket(), connectPacket);
                     break;
                 case DisconnectPacket disconnectPacket:
@@ -103,25 +116,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
             foreach (Client client in Clients)
                 if (client.EndPoint.ToString() == NetworkingClient.EndPoint.ToString())
                     return client;
-
             return null;
-        }
-
-        /// <summary>
-        /// Takes a ConnectPacket and creates a ClientInfo for the connecting client
-        /// </summary>
-        /// <returns></returns>
-        public Client GenerateConnectingClient()
-        {
-            Client c = new Client
-            {
-                EndPoint = new IPEndPoint(IPAddress.Parse(NetworkingClient.EndPoint.Address.ToString()), NetworkingClient.EndPoint.Port),
-                LastConnectionTime = Time.Current,
-                Statues = ConnectionStatues.Connecting
-            };
-            c.OnDisconnected += () => Clients.Remove(c);
-
-            return c;
         }
 
         /// <summary>

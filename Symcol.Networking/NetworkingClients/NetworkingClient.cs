@@ -61,7 +61,7 @@ namespace Symcol.Networking.NetworkingClients
 
                 stream.Position = 0;
 
-                int i = packet.PacketSize;
+                uint i = packet.PacketSize;
                 retry:
                 byte[] data = new byte[i];
 
