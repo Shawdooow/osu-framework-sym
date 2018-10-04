@@ -59,7 +59,6 @@ namespace Symcol.Networking.NetworkingHandlers.Server
                     client = CreateConnectingClient(connectPacket);
                     Clients.Add(client);
                     SendToClient(new ConnectedPacket(), connectPacket);
-                    Logger.Log($"Client {client.EndPoint.Address} is connecting!", LoggingTarget.Network);
                     break;
                 case DisconnectPacket disconnectPacket:
                     ClientDisconnecting(disconnectPacket);
@@ -71,7 +70,6 @@ namespace Symcol.Networking.NetworkingHandlers.Server
                         client.LastConnectionTime = Time.Current;
                         client.ConnectionTryCount = 0;
                         client.Statues = ConnectionStatues.Connected;
-                        Logger.Log($"Client {client.EndPoint.Address} has connected!", LoggingTarget.Network);
                         break;
                     }
                     Logger.Log("Recieved a test packet from a client we have never seen!", LoggingTarget.Network, LogLevel.Error);
@@ -95,7 +93,6 @@ namespace Symcol.Networking.NetworkingHandlers.Server
                 if (client.LastConnectionTime + TimeOutTime <= Time.Current)
                 {
                     client.Statues = ConnectionStatues.Disconnected;
-                    Logger.Log($"Client {client.EndPoint.Address} has lost connection!", LoggingTarget.Network);
                     break;
                 }
             }
