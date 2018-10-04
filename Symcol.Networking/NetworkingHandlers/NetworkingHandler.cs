@@ -13,9 +13,6 @@ namespace Symcol.Networking.NetworkingHandlers
     {
         #region Fields
 
-        //30 Seconds by default
-        protected virtual double TimeOutTime => 30000;
-
         protected virtual string Gamekey => null;
 
         public NetworkingClient NetworkingClient { get; protected set; }

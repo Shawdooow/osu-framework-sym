@@ -10,6 +10,9 @@ namespace Symcol.Networking.NetworkingHandlers.Server
     {
         #region Fields
 
+        //30 Seconds by default
+        protected virtual double TimeOutTime => 60000;
+
         /// <summary>
         /// All Connecting clients / clients losing connection
         /// </summary>
