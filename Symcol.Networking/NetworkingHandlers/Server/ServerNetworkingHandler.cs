@@ -52,23 +52,29 @@ namespace Symcol.Networking.NetworkingHandlers.Server
         {
             base.HandlePackets(packet);
 
+            Client client;
             switch (packet)
             {
                 case ConnectPacket connectPacket:
-                    Clients.Add(CreateConnectingClient(connectPacket));
+                    client = CreateConnectingClient(connectPacket);
+                    Clients.Add(client);
                     SendToClient(new ConnectedPacket(), connectPacket);
+                    Logger.Log($"Client {client.EndPoint.Address} is connecting!", LoggingTarget.Network);
                     break;
                 case DisconnectPacket disconnectPacket:
                     ClientDisconnecting(disconnectPacket);
                     break;
                 case TestPacket testPacket:
-                    Client client = GetClient(testPacket);
+                    client = GetClient(testPacket);
                     if (client != null)
                     {
                         client.LastConnectionTime = Time.Current;
                         client.ConnectionTryCount = 0;
                         client.Statues = ConnectionStatues.Connected;
+                        Logger.Log($"Client {client.EndPoint.Address} has connected!", LoggingTarget.Network);
+                        break;
                     }
+                    Logger.Log("Recieved a test packet from a client we have never seen!", LoggingTarget.Network, LogLevel.Error);
                     break;
             }
         }
@@ -88,8 +94,8 @@ namespace Symcol.Networking.NetworkingHandlers.Server
 
                 if (client.LastConnectionTime + TimeOutTime <= Time.Current)
                 {
-                    Clients.Remove(client);
-                    Logger.Log("Connection to a connected client lost! - " + client.EndPoint, LoggingTarget.Network, LogLevel.Error);
+                    client.Statues = ConnectionStatues.Disconnected;
+                    Logger.Log($"Client {client.EndPoint.Address} has lost connection!", LoggingTarget.Network);
                     break;
                 }
             }
