@@ -110,11 +110,6 @@ namespace Symcol.Networking.NetworkingHandlers.Peer
         {
             SendToServer(new DisconnectPacket());
 
-            //foreach (NetworkingClient c in NetworkingClients)
-            //c?.Dispose();
-
-            //NetworkingClients = new List<NetworkingClient>();
-
             base.Dispose(isDisposing);
         }
     }
