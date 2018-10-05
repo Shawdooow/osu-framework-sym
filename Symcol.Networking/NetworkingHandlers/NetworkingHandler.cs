@@ -138,10 +138,7 @@ namespace Symcol.Networking.NetworkingHandlers
         /// Handle any packets we got before sending them to OnPackerReceive
         /// </summary>
         /// <param name="packet"></param>
-        protected virtual void HandlePackets(Packet packet)
-        {
-            OnPacketReceive?.Invoke(packet);
-        }
+        protected virtual void HandlePackets(Packet packet) => OnPacketReceive?.Invoke(packet);
 
         #endregion
 
@@ -170,14 +167,6 @@ namespace Symcol.Networking.NetworkingHandlers
                 c.Gamekey = Gamekey;
             return packet;
         }
-
-        #endregion
-
-        #region Send Functions
-
-        #endregion
-
-        #region Network Actions
 
         #endregion
     }

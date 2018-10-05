@@ -33,10 +33,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
 
         #endregion
 
-        public ServerNetworkingHandler()
-        {
-            OnAddressChange += (ip, port) => { NetworkingClient = new UdpNetworkingClient(port); };
-        }
+        public ServerNetworkingHandler() => OnAddressChange += (ip, port) => { NetworkingClient = new UdpNetworkingClient(port); };
 
         #region Update Loop
 
@@ -172,10 +169,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
                     NetworkingClient.SendPacket(SignPacket(packet), client.EndPoint);
         }
 
-        protected void SendToClient(Packet packet, Packet recievedPacket)
-        {
-            NetworkingClient.SendPacket(SignPacket(packet), GetClient(recievedPacket).EndPoint);
-        }
+        protected void SendToClient(Packet packet, Packet recievedPacket) => NetworkingClient.SendPacket(SignPacket(packet), GetClient(recievedPacket).EndPoint);
 
         /// <summary>
         /// Test a clients connection
@@ -192,7 +186,8 @@ namespace Symcol.Networking.NetworkingHandlers.Server
 
         public virtual void Close()
         {
-
+            if (NetworkingClient is UdpNetworkingClient udp)
+                udp.UdpClient.Close();
         }
 
         #endregion
@@ -200,6 +195,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
         protected override void Dispose(bool isDisposing)
         {
             ShareWithAllClients(new ServerClosingPacket());
+            Close();
             base.Dispose(isDisposing);
         }
     }
