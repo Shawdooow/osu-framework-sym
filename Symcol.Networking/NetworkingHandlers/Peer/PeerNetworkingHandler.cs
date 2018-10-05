@@ -14,6 +14,8 @@ namespace Symcol.Networking.NetworkingHandlers.Peer
         /// </summary>
         public Action<Host> OnConnectedToHost;
 
+        public ConnectionStatues ConnectionStatues { get; protected set; }
+
         #endregion
 
         public PeerNetworkingHandler()
@@ -91,6 +93,7 @@ namespace Symcol.Networking.NetworkingHandlers.Peer
             {
                 Logger.Log($"Attempting to connect to {NetworkingClient.Address}", LoggingTarget.Network);
                 SendToServer(new ConnectPacket());
+                ConnectionStatues = ConnectionStatues.Connecting;
             }
             //else
                 //Logger.Log("We are already connecting, please wait for us to fail before retrying!", LoggingTarget.Network);

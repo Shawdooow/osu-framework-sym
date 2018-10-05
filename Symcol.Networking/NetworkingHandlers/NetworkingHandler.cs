@@ -113,8 +113,6 @@ namespace Symcol.Networking.NetworkingHandlers
 
         private int port;
 
-        public ConnectionStatues ConnectionStatues { get; protected set; }
-
         #endregion
 
         protected NetworkingHandler()
