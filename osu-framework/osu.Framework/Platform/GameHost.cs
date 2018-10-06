@@ -114,7 +114,7 @@ namespace osu.Framework.Platform
         public void RegisterThread(GameThread t)
         {
             threads.Add(t);
-            t.UnhandledException = unhandledExceptionHandler;
+            //t.UnhandledException = unhandledExceptionHandler;
             t.Monitor.EnablePerformanceProfiling = performanceLogging;
         }
 
@@ -163,8 +163,8 @@ namespace osu.Framework.Platform
         {
             toolkit = Toolkit.Init();
 
-            AppDomain.CurrentDomain.UnhandledException += unhandledExceptionHandler;
-            TaskScheduler.UnobservedTaskException += unobservedExceptionHandler;
+            //AppDomain.CurrentDomain.UnhandledException += unhandledExceptionHandler;
+            //TaskScheduler.UnobservedTaskException += unobservedExceptionHandler;
 
             Trace.Listeners.Clear();
             Trace.Listeners.Add(new ThrowingTraceListener());
@@ -198,17 +198,17 @@ namespace osu.Framework.Platform
                 (DrawThread = new DrawThread(DrawFrame)
                 {
                     OnThreadStart = DrawInitialize,
-                    UnhandledException = unhandledExceptionHandler
+                    //UnhandledException = unhandledExceptionHandler
                 }),
                 (UpdateThread = new UpdateThread(UpdateFrame)
                 {
                     OnThreadStart = UpdateInitialize,
                     Monitor = { HandleGC = true },
-                    UnhandledException = unhandledExceptionHandler,
+                    //UnhandledException = unhandledExceptionHandler,
                 }),
                 (InputThread = new InputThread(null)
                 {
-                    UnhandledException = unhandledExceptionHandler
+                    //UnhandledException = unhandledExceptionHandler
                 }), //never gets started.
             };
 
