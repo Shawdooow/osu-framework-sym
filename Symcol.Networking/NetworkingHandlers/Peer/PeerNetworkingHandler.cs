@@ -25,14 +25,6 @@ namespace Symcol.Networking.NetworkingHandlers.Peer
 
         #region Update Loop
 
-        protected override void Update()
-        {
-            base.Update();
-
-            foreach (Packet p in ReceivePackets())
-                HandlePackets(p);
-        }
-
         /// <summary>
         /// Handle any packets we got before sending them to OnPackerReceive
         /// </summary>
