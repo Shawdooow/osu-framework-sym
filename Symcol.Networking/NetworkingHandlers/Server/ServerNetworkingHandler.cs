@@ -47,29 +47,29 @@ namespace Symcol.Networking.NetworkingHandlers.Server
         /// <summary>
         /// Handle any packets we got before sending them to OnPackerReceive
         /// </summary>
-        /// <param name="packet"></param>
-        protected override void HandlePackets(Packet packet)
+        /// <param name="info"></param>
+        protected override void HandlePackets(PacketInfo info)
         {
-            base.HandlePackets(packet);
+            base.HandlePackets(info);
 
-            Client client;
-            switch (packet)
+            ServerPacketInfo serverInfo = (ServerPacketInfo)info;
+
+            switch (info.Packet)
             {
                 case ConnectPacket connectPacket:
-                    client = CreateConnectingClient(connectPacket);
-                    Clients.Add(client);
-                    SendToClient(new ConnectedPacket(), connectPacket);
+                    serverInfo.Client = CreateConnectingClient(connectPacket);
+                    Clients.Add(serverInfo.Client);
+                    SendToClient(new ConnectedPacket());
                     break;
                 case DisconnectPacket disconnectPacket:
-                    ClientDisconnecting(disconnectPacket);
+                    ClientDisconnecting(serverInfo);
                     break;
                 case TestPacket testPacket:
-                    client = GetClient(testPacket);
-                    if (client != null)
+                    if (serverInfo.Client != null)
                     {
-                        client.LastConnectionTime = Time.Current;
-                        client.ConnectionTryCount = 0;
-                        client.Statues = ConnectionStatues.Connected;
+                        serverInfo.Client.LastConnectionTime = Time.Current;
+                        serverInfo.Client.ConnectionTryCount = 0;
+                        serverInfo.Client.Statues = ConnectionStatues.Connected;
                         break;
                     }
                     Logger.Log("Recieved a test packet from a client we have never seen!", LoggingTarget.Network, LogLevel.Error);
@@ -102,6 +102,33 @@ namespace Symcol.Networking.NetworkingHandlers.Server
 
         #region Packet and Client Helper Functions
 
+        protected override List<PacketInfo> ReceivePackets()
+        {
+            List<PacketInfo> packets = new List<PacketInfo>();
+            for (int i = 0; i < NetworkingClient?.Available; i++)
+            {
+                packets.Add(new ServerPacketInfo
+                {
+                    Packet = NetworkingClient.GetPacket(),
+                    Client = GetClient(),
+                });
+            }
+
+            return packets;
+        }
+
+        /// <summary>
+        /// Get a matching client from currently connecting/connected clients
+        /// </summary>
+        /// <returns></returns>
+        protected Client GetClient()
+        {
+            foreach (Client client in Clients)
+                if (client.EndPoint.ToString() == NetworkingClient.EndPoint.ToString())
+                    return client;
+            return null;
+        }
+
         protected override Packet SignPacket(Packet packet)
         { 
             if (packet is ConnectPacket c)
@@ -110,32 +137,14 @@ namespace Symcol.Networking.NetworkingHandlers.Server
         }
 
         /// <summary>
-        /// Get a matching client from currently connecting/connected clients
-        /// </summary>
-        /// <param name="packet"></param>
-        /// <returns></returns>
-        protected Client GetClient(Packet packet)
-        {
-            foreach (Client client in Clients)
-                if (client.EndPoint.ToString() == NetworkingClient.EndPoint.ToString())
-                    return client;
-            return null;
-        }
-
-        /// <summary>
         /// Called to remove a client that is disconnecting
         /// </summary>
-        /// <param name="packet"></param>
-        protected void ClientDisconnecting(DisconnectPacket packet)
-        {
-            Client client = GetClient(packet);
-            if (client != null)
-                client.Statues = ConnectionStatues.Disconnected;
-        }
+        /// <param name="info"></param>
+        protected void ClientDisconnecting(ServerPacketInfo info) => info.Client.Statues = ConnectionStatues.Disconnected;
 
         protected virtual bool HandlePacket(Packet packet)
         {
-            if (GetClient(packet) != null)
+            if (GetClient() != null)
                 return true;
 
             if (packet is ConnectPacket c && c.Gamekey == Gamekey)
@@ -169,7 +178,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
                     NetworkingClient.SendPacket(SignPacket(packet), client.EndPoint);
         }
 
-        protected void SendToClient(Packet packet, Packet recievedPacket) => NetworkingClient.SendPacket(SignPacket(packet), GetClient(recievedPacket).EndPoint);
+        protected void SendToClient(Packet packet) => NetworkingClient.SendPacket(SignPacket(packet), GetClient().EndPoint);
 
         /// <summary>
         /// Test a clients connection

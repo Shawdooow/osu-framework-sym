@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using osu.Framework.Logging;
 using Symcol.Networking.NetworkingClients;
 using Symcol.Networking.Packets;
@@ -28,12 +29,12 @@ namespace Symcol.Networking.NetworkingHandlers.Peer
         /// <summary>
         /// Handle any packets we got before sending them to OnPackerReceive
         /// </summary>
-        /// <param name="packet"></param>
-        protected override void HandlePackets(Packet packet)
+        /// <param name="info"></param>
+        protected override void HandlePackets(PacketInfo info)
         {
             Logger.Log($"Recieved a Packet from {NetworkingClient.EndPoint}", LoggingTarget.Network, LogLevel.Debug);
 
-            switch (packet)
+            switch (info.Packet)
             {
                 case ConnectedPacket _:
                     ConnectionStatues = ConnectionStatues.Connected;
@@ -48,12 +49,23 @@ namespace Symcol.Networking.NetworkingHandlers.Peer
                     break;
             }
 
-            OnPacketReceive?.Invoke(packet);
+            OnPacketReceive?.Invoke(info);
         }
 
         #endregion
 
         #region Packet and Client Helper Functions
+
+        protected override List<PacketInfo> ReceivePackets()
+        {
+            List<PacketInfo> packets = new List<PacketInfo>();
+            for (int i = 0; i < NetworkingClient?.Available; i++)
+                packets.Add(new PeerPacketInfo
+                {
+                    Packet = NetworkingClient.GetPacket()
+                });
+            return packets;
+        }
 
         protected override Packet SignPacket(Packet packet)
         {

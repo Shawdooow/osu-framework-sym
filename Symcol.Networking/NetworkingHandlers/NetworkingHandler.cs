@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using osu.Framework.Timing;
 using Symcol.Base.Graphics.Containers;
 using Symcol.Networking.NetworkingClients;
@@ -15,12 +16,12 @@ namespace Symcol.Networking.NetworkingHandlers
 
         protected virtual string Gamekey => null;
 
-        public NetworkingClient NetworkingClient { get; protected set; }
+        protected NetworkingClient NetworkingClient { get; set; }
 
         /// <summary>
         /// Gets hit when we get + send a Packet
         /// </summary>
-        public Action<Packet> OnPacketReceive;
+        public Action<PacketInfo> OnPacketReceive;
 
         /// <summary>
         /// TODO: Implement TCP connections
@@ -130,7 +131,7 @@ namespace Symcol.Networking.NetworkingHandlers
         {
             base.Update();
 
-            foreach (Packet p in ReceivePackets())
+            foreach (PacketInfo p in ReceivePackets())
                 HandlePackets(p);
         }
 
@@ -138,7 +139,7 @@ namespace Symcol.Networking.NetworkingHandlers
         /// Handle any packets we got before sending them to OnPackerReceive
         /// </summary>
         /// <param name="packet"></param>
-        protected virtual void HandlePackets(Packet packet) => OnPacketReceive?.Invoke(packet);
+        protected virtual void HandlePackets(PacketInfo packet) => OnPacketReceive?.Invoke(packet);
 
         #endregion
 
@@ -148,13 +149,7 @@ namespace Symcol.Networking.NetworkingHandlers
         /// returns a list of all avalable packets
         /// </summary>
         /// <returns></returns>
-        protected virtual List<Packet> ReceivePackets()
-        {
-            List<Packet> packets = new List<Packet>();
-            for (int i = 0; i < NetworkingClient?.Available; i++)
-                packets.Add(NetworkingClient.GetPacket());
-            return packets;
-        }
+        protected abstract List<PacketInfo> ReceivePackets();
 
         /// <summary>
         /// Signs this packet so everyone knows where it came from
