@@ -1,5 +1,4 @@
-﻿using osu.Framework.Input.EventArgs;
-using osu.Framework.Input.States;
+﻿using osu.Framework.Input.Events;
 using OpenTK;
 using OpenTK.Input;
 
@@ -7,7 +6,7 @@ namespace Symcol.Base.Graphics.Containers
 {
     public class DragContainer : SymcolContainer
     {
-        protected override bool OnDragStart(InputState state) => true;
+        protected override bool OnDragStart(DragStartEvent e) => true;
 
         public bool AllowLeftClickDrag { get; set; } = true;
 
@@ -16,42 +15,42 @@ namespace Symcol.Base.Graphics.Containers
 
         private Vector2 startPosition;
 
-        protected override bool OnMouseDown(InputState state, MouseDownEventArgs args)
+        protected override bool OnMouseDown(MouseDownEvent e)
         {
             startPosition = Position;
 
-            if (args.Button == MouseButton.Left && AllowLeftClickDrag)
+            if (e.Button == MouseButton.Left && AllowLeftClickDrag)
                 return leftDown = true;
 
-            if (args.Button == MouseButton.Right)
+            if (e.Button == MouseButton.Right)
                 return rightDown = true;
 
-            return base.OnMouseDown(state, args);
+            return base.OnMouseDown(e);
         }
 
-        protected override bool OnDrag(InputState state)
+        protected override bool OnDrag(DragEvent e)
         {
             if (leftDown || rightDown)
-                Position = startPosition + state.Mouse.Position - state.Mouse.PositionMouseDown.GetValueOrDefault();
+                Position = startPosition + e.Delta;
 
-            return base.OnDrag(state);
+            return base.OnDrag(e);
         }
 
-        protected override bool OnMouseUp(InputState state, MouseUpEventArgs args)
+        protected override bool OnMouseUp(MouseUpEvent e)
         {
-            if (args.Button == MouseButton.Left && AllowLeftClickDrag)
+            if (e.Button == MouseButton.Left && AllowLeftClickDrag)
             {
                 leftDown = false;
                 return true;
             }
 
-            if (args.Button == MouseButton.Right)
+            if (e.Button == MouseButton.Right)
             {
                 rightDown = false;
                 return true;
             }
 
-            return base.OnMouseUp(state, args);
+            return base.OnMouseUp(e);
         }
     }
 }

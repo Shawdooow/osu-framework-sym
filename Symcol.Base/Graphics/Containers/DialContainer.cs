@@ -1,6 +1,6 @@
 ﻿using System;
 using osu.Framework.Graphics;
-using osu.Framework.Input.States;
+using osu.Framework.Input.Events;
 using OpenTK;
 
 namespace Symcol.Base.Graphics.Containers
@@ -22,10 +22,10 @@ namespace Symcol.Base.Graphics.Containers
 
         private bool rotationTransferred;
 
-        protected override bool OnMouseMove(InputState state)
+        protected override bool OnMouseMove(MouseMoveEvent e)
         {
-            mousePosition = Parent.ToLocalSpace(state.Mouse.NativeState.Position);
-            return base.OnMouseMove(state);
+            mousePosition = Parent.ToLocalSpace(e.CurrentState.Mouse.Position);
+            return base.OnMouseMove(e);
         }
 
         protected override void Update()
