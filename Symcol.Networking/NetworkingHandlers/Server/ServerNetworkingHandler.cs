@@ -59,7 +59,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
                 case ConnectPacket connectPacket:
                     serverInfo.Client = CreateConnectingClient(connectPacket);
                     Clients.Add(serverInfo.Client);
-                    SendToClient(new ConnectedPacket());
+                    ReturnToClient(new ConnectedPacket());
                     break;
                 case DisconnectPacket disconnectPacket:
                     ClientDisconnecting(serverInfo);
@@ -110,7 +110,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
                 packets.Add(new ServerPacketInfo
                 {
                     Packet = NetworkingClient.GetPacket(),
-                    Client = GetClient(),
+                    Client = GetLastClient(),
                 });
             }
 
@@ -121,7 +121,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
         /// Get a matching client from currently connecting/connected clients
         /// </summary>
         /// <returns></returns>
-        protected Client GetClient()
+        protected Client GetLastClient()
         {
             foreach (Client client in Clients)
                 if (client.EndPoint.ToString() == NetworkingClient.EndPoint.ToString())
@@ -144,7 +144,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
 
         protected virtual bool HandlePacket(Packet packet)
         {
-            if (GetClient() != null)
+            if (GetLastClient() != null)
                 return true;
 
             if (packet is ConnectPacket c && c.Gamekey == Gamekey)
@@ -178,7 +178,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
                     NetworkingClient.SendPacket(SignPacket(packet), client.EndPoint);
         }
 
-        protected void SendToClient(Packet packet) => NetworkingClient.SendPacket(SignPacket(packet), GetClient().EndPoint);
+        protected void ReturnToClient(Packet packet) => NetworkingClient.SendPacket(SignPacket(packet), GetLastClient().EndPoint);
 
         /// <summary>
         /// Test a clients connection
