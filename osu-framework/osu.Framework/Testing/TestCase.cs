@@ -40,7 +40,7 @@ namespace osu.Framework.Testing
         {
             isNUnitRunning = true;
 
-            host = new HeadlessGameHost($"{GetType().Name}-{Guid.NewGuid()}", realtime: false);
+            host = new HeadlessGameHost($"test-{Guid.NewGuid()}", realtime: false);
             runner = CreateRunner();
 
             if (!(runner is Game game))
@@ -53,10 +53,6 @@ namespace osu.Framework.Testing
                 Thread.Sleep(10);
             }
         }
-
-        protected internal override void AddInternal(Drawable drawable) => throw new InvalidOperationException($"Modifying {nameof(InternalChildren)} will cause critical failure. Use {nameof(Add)} instead.");
-        protected internal override void ClearInternal(bool disposeChildren = true) => throw new InvalidOperationException($"Modifying {nameof(InternalChildren)} will cause critical failure. Use {nameof(Clear)} instead.");
-        protected internal override bool RemoveInternal(Drawable drawable) => throw new InvalidOperationException($"Modifying {nameof(InternalChildren)} will cause critical failure. Use {nameof(Remove)} instead.");
 
         [OneTimeTearDown]
         public void DestroyGameHost()
@@ -96,9 +92,6 @@ namespace osu.Framework.Testing
 
         private void checkForErrors()
         {
-            if (host.ExecutionState == ExecutionState.Stopping)
-                runTask.Wait();
-
             if (runTask.Exception != null)
                 throw runTask.Exception;
         }
@@ -127,52 +120,47 @@ namespace osu.Framework.Testing
             RelativeSizeAxes = Axes.Both;
             Masking = true;
 
-            base.AddInternal(new Container
+            InternalChildren = new Drawable[]
             {
-                RelativeSizeAxes = Axes.Both,
-                Children = new Drawable[]
+                new Box
                 {
-                    new Box
+                    Colour = new Color4(25, 25, 25, 255),
+                    RelativeSizeAxes = Axes.Y,
+                    Width = steps_width,
+                },
+                scroll = new ScrollContainer
+                {
+                    Width = steps_width,
+                    Depth = float.MinValue,
+                    RelativeSizeAxes = Axes.Y,
+                    Padding = new MarginPadding(5),
+                    Child = StepsContainer = new FillFlowContainer<Drawable>
                     {
-                        Colour = new Color4(25, 25, 25, 255),
-                        RelativeSizeAxes = Axes.Y,
-                        Width = steps_width,
+                        Direction = FillDirection.Vertical,
+                        Spacing = new Vector2(5),
+                        RelativeSizeAxes = Axes.X,
+                        AutoSizeAxes = Axes.Y,
                     },
-                    scroll = new ScrollContainer
+                },
+                new Container
+                {
+                    Masking = true,
+                    Padding = new MarginPadding
                     {
-                        Width = steps_width,
-                        Depth = float.MinValue,
-                        RelativeSizeAxes = Axes.Y,
-                        Padding = new MarginPadding(5),
-                        Child = StepsContainer = new FillFlowContainer<Drawable>
-                        {
-                            Direction = FillDirection.Vertical,
-                            Spacing = new Vector2(5),
-                            RelativeSizeAxes = Axes.X,
-                            AutoSizeAxes = Axes.Y,
-                        },
+                        Left = steps_width + padding,
+                        Right = padding,
+                        Top = padding,
+                        Bottom = padding,
                     },
-                    new Container
+                    RelativeSizeAxes = Axes.Both,
+                    Child = content = new Container
                     {
                         Masking = true,
-                        Padding = new MarginPadding
-                        {
-                            Left = steps_width + padding,
-                            Right = padding,
-                            Top = padding,
-                            Bottom = padding,
-                        },
-                        RelativeSizeAxes = Axes.Both,
-                        Child = content = new DrawFrameRecordingContainer
-                        {
-                            Masking = true,
-                            RelativeSizeAxes = Axes.Both
-                        }
-                    },
-                }
-            });
+                        RelativeSizeAxes = Axes.Both
+                    }
+                },
+            };
         }
-
 
         private const float steps_width = 180;
         private const float padding = 0;

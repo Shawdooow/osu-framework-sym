@@ -20,6 +20,9 @@ namespace osu.Framework.IO.Stores
             Namespace = ns;
         }
 
-        protected override IEnumerable<string> GetFilenames(string name) => base.GetFilenames($@"{Namespace}/{name}");
+        protected override List<string> GetFilenames(string name)
+        {
+            return base.GetFilenames($@"{Namespace}/{name}");
+        }
     }
 }

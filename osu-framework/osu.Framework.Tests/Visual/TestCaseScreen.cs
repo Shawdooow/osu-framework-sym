@@ -93,7 +93,7 @@ namespace osu.Framework.Tests.Visual
         }
 
         [Test]
-        public void TestExitBeforePush()
+        public void TestCaseExitBeforePush()
         {
             TestScreen screen1 = null;
             TestScreen screen2 = null;
@@ -105,7 +105,7 @@ namespace osu.Framework.Tests.Visual
             AddAssert("ensure not current", () => !screen1.IsCurrentScreen);
             AddAssert("ensure base still current", () => baseScreen.IsCurrentScreen);
             AddStep("push fast", () => baseScreen.Push(screen2 = new TestScreen()));
-            AddUntilStep(() => screen2.IsCurrentScreen, "ensure new current");
+            AddAssert("ensure new current", () => screen2.IsCurrentScreen);
         }
 
         private void pushAndEnsureCurrent(Func<Screen> screenCtor, Func<Screen> target = null)

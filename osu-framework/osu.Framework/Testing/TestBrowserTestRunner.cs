@@ -23,8 +23,10 @@ namespace osu.Framework.Testing
         }
 
         [BackgroundDependencyLoader]
-        private void load(FrameworkConfigManager config)
+        private void load(GameHost host, FrameworkConfigManager config)
         {
+            this.host = host;
+
             volume = config.GetBindable<double>(FrameworkSetting.VolumeUniversal);
             volumeAtStartup = volume.Value;
             volume.Value = 0;
@@ -56,9 +58,7 @@ namespace osu.Framework.Testing
         private Type loadableTestType => testIndex >= 0 ? browser.TestTypes.ElementAtOrDefault(testIndex) : null;
 
         private readonly TestBrowser browser;
-
-        [Resolved]
-        private GameHost host { get; set; }
+        private GameHost host;
 
         private void runNext()
         {

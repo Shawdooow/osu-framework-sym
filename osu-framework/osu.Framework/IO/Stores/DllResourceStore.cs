@@ -4,7 +4,6 @@
 using System;
 using System.IO;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace osu.Framework.IO.Stores
 {
@@ -28,19 +27,6 @@ namespace osu.Framework.IO.Stores
 
                 byte[] buffer = new byte[input.Length];
                 input.Read(buffer, 0, buffer.Length);
-                return buffer;
-            }
-        }
-
-        public virtual async Task<byte[]> GetAsync(string name)
-        {
-            using (Stream input = GetStream(name))
-            {
-                if (input == null)
-                    return null;
-
-                byte[] buffer = new byte[input.Length];
-                await input.ReadAsync(buffer, 0, buffer.Length);
                 return buffer;
             }
         }

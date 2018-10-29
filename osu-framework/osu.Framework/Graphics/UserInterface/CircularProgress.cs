@@ -24,12 +24,17 @@ namespace osu.Framework.Graphics.UserInterface
 
         private readonly CircularProgressDrawNodeSharedData pathDrawNodeSharedData = new CircularProgressDrawNodeSharedData();
 
+        public bool CanDisposeTexture { get; protected set; }
+
         #region Disposal
 
         protected override void Dispose(bool isDisposing)
         {
-            texture?.Dispose();
-            texture = null;
+            if (CanDisposeTexture)
+            {
+                texture?.Dispose();
+                texture = null;
+            }
 
             base.Dispose(isDisposing);
         }
@@ -75,9 +80,10 @@ namespace osu.Framework.Graphics.UserInterface
                 if (value == texture)
                     return;
 
-                texture?.Dispose();
-                texture = value;
+                if (texture != null && CanDisposeTexture)
+                    texture.Dispose();
 
+                texture = value;
                 Invalidate(Invalidation.DrawNode);
             }
         }

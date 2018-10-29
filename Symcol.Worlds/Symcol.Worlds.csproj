@@ -10,8 +10,4 @@
   <ItemGroup>
     <ProjectReference Include="..\Symcol.IO\Symcol.IO.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Chunks\" />
-    <Folder Include="Tiles\" />
-  </ItemGroup>
 </Project>

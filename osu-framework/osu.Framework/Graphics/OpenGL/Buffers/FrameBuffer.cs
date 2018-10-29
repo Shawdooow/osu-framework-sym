@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using osu.Framework.Graphics.OpenGL.Textures;
-using osu.Framework.Graphics.Textures;
 using OpenTK;
 using OpenTK.Graphics.ES30;
 
@@ -61,7 +60,7 @@ namespace osu.Framework.Graphics.OpenGL.Buffers
             if (withTexture)
             {
                 Texture = new TextureGLSingle(1, 1, true, filteringMode);
-                Texture.SetData(new TextureUpload());
+                Texture.SetData(new TextureUpload(Array.Empty<byte>()));
                 Texture.Upload();
 
                 Bind();
@@ -78,7 +77,7 @@ namespace osu.Framework.Graphics.OpenGL.Buffers
         private Vector2 size = Vector2.One;
 
         /// <summary>
-        /// Sets the size of the texture of this frame buffer.
+        /// Sets the size of the texture of this framebuffer.
         /// </summary>
         public Vector2 Size
         {
@@ -91,7 +90,7 @@ namespace osu.Framework.Graphics.OpenGL.Buffers
 
                 Texture.Width = (int)Math.Ceiling(size.X);
                 Texture.Height = (int)Math.Ceiling(size.Y);
-                Texture.SetData(new TextureUpload());
+                Texture.SetData(new TextureUpload(Array.Empty<byte>()));
                 Texture.Upload();
             }
         }

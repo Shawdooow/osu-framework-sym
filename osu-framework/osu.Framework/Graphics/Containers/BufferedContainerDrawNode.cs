@@ -72,7 +72,7 @@ namespace osu.Framework.Graphics.Containers
         /// </summary>
         public bool RequiresRedraw => UpdateVersion > Shared.DrawVersion;
 
-        private ValueInvokeOnDisposal establishFrameBufferViewport(Vector2 roundedSize)
+        private InvokeOnDisposal establishFrameBufferViewport(Vector2 roundedSize)
         {
             // Disable masking for generating the frame buffer since masking will be re-applied
             // when actually drawing later on anyways. This allows more information to be captured
@@ -91,16 +91,14 @@ namespace osu.Framework.Graphics.Containers
             // Match viewport to FrameBuffer such that we don't draw unnecessary pixels.
             GLWrapper.PushViewport(new RectangleI(0, 0, (int)roundedSize.X, (int)roundedSize.Y));
 
-            return new ValueInvokeOnDisposal(returnViewport);
+            return new InvokeOnDisposal(delegate
+            {
+                GLWrapper.PopViewport();
+                GLWrapper.PopMaskingInfo();
+            });
         }
 
-        private void returnViewport()
-        {
-            GLWrapper.PopViewport();
-            GLWrapper.PopMaskingInfo();
-        }
-
-        private ValueInvokeOnDisposal bindFrameBuffer(FrameBuffer frameBuffer, Vector2 requestedSize)
+        private InvokeOnDisposal bindFrameBuffer(FrameBuffer frameBuffer, Vector2 requestedSize)
         {
             if (!frameBuffer.IsInitialized)
                 frameBuffer.Initialize(true, FilteringMode);
@@ -115,7 +113,7 @@ namespace osu.Framework.Graphics.Containers
 
             frameBuffer.Bind();
 
-            return new ValueInvokeOnDisposal(frameBuffer.Unbind);
+            return new InvokeOnDisposal(frameBuffer.Unbind);
         }
 
         private void drawFrameBufferToBackBuffer(FrameBuffer frameBuffer, RectangleF drawRectangle, ColourInfo colourInfo)
@@ -158,15 +156,12 @@ namespace osu.Framework.Graphics.Containers
 
             using (bindFrameBuffer(target, source.Size))
             {
-                Shared.BlurShader.GetUniform<int>(@"g_Radius").UpdateValue(ref kernelRadius);
-                Shared.BlurShader.GetUniform<float>(@"g_Sigma").UpdateValue(ref sigma);
-
-                Vector2 size = source.Size;
-                Shared.BlurShader.GetUniform<Vector2>(@"g_TexSize").UpdateValue(ref size);
+                Shared.BlurShader.GetUniform<int>(@"g_Radius").Value = kernelRadius;
+                Shared.BlurShader.GetUniform<float>(@"g_Sigma").Value = sigma;
+                Shared.BlurShader.GetUniform<Vector2>(@"g_TexSize").Value = source.Size;
 
                 float radians = -MathHelper.DegreesToRadians(blurRotation);
-                Vector2 blur = new Vector2((float)Math.Cos(radians), (float)Math.Sin(radians));
-                Shared.BlurShader.GetUniform<Vector2>(@"g_BlurDirection").UpdateValue(ref blur);
+                Shared.BlurShader.GetUniform<Vector2>(@"g_BlurDirection").Value = new Vector2((float)Math.Cos(radians), (float)Math.Sin(radians));
 
                 Shared.BlurShader.Bind();
                 drawFrameBufferToBackBuffer(source, new RectangleF(0, 0, source.Texture.Width, source.Texture.Height), ColourInfo.SingleColour(Color4.White));
@@ -239,21 +234,21 @@ namespace osu.Framework.Graphics.Containers
 
             if (DrawOriginal && EffectPlacement == EffectPlacement.InFront)
             {
-                GLWrapper.SetBlend(DrawColourInfo.Blending);
-                drawFrameBufferToBackBuffer(Shared.FrameBuffers[originalIndex], drawRectangle, DrawColourInfo.Colour);
+                GLWrapper.SetBlend(DrawInfo.Blending);
+                drawFrameBufferToBackBuffer(Shared.FrameBuffers[originalIndex], drawRectangle, DrawInfo.Colour);
             }
 
             // Blit the final framebuffer to screen.
             GLWrapper.SetBlend(new BlendingInfo(EffectBlending));
 
-            ColourInfo effectColour = DrawColourInfo.Colour;
+            ColourInfo effectColour = DrawInfo.Colour;
             effectColour.ApplyChild(EffectColour);
             drawFrameBufferToBackBuffer(Shared.FrameBuffers[0], drawRectangle, effectColour);
 
             if (DrawOriginal && EffectPlacement == EffectPlacement.Behind)
             {
-                GLWrapper.SetBlend(DrawColourInfo.Blending);
-                drawFrameBufferToBackBuffer(Shared.FrameBuffers[originalIndex], drawRectangle, DrawColourInfo.Colour);
+                GLWrapper.SetBlend(DrawInfo.Blending);
+                drawFrameBufferToBackBuffer(Shared.FrameBuffers[originalIndex], drawRectangle, DrawInfo.Colour);
             }
 
             Shader.Unbind();

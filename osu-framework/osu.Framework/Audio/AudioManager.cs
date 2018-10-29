@@ -211,14 +211,15 @@ namespace osu.Framework.Audio
                 oldDeviceValid &= oldDeviceInfo.IsEnabled && oldDeviceInfo.IsInitialized;
             }
 
-            if (newDevice == oldDevice && oldDeviceValid)
+            if (newDevice == oldDevice)
+            {
+                //check the old device is still valid
+                if (oldDeviceValid)
                     return true;
+            }
 
             if (string.IsNullOrEmpty(newDevice))
-            {
-                Logger.Log(@"BASS Initialization failed (no audio device present)");
                 return false;
-            }
 
             int newDeviceIndex = audioDevices.FindIndex(df => df.Name == newDevice);
 

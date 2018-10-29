@@ -24,5 +24,8 @@ namespace osu.Framework.Input.StateChanges
         }
 
         protected override ButtonStates<JoystickButton> GetButtonStates(InputState state) => state.Joystick.Buttons;
+
+        protected override void Handle(IInputStateChangeHandler handler, InputState state, JoystickButton button, ButtonStateChangeKind kind) =>
+            handler.HandleJoystickButtonStateChange(state, button, kind);
     }
 }

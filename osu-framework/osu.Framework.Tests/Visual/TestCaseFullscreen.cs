@@ -14,10 +14,8 @@ namespace osu.Framework.Tests.Visual
     public class TestCaseFullscreen : TestCase
     {
         private readonly SpriteText currentActualSize = new SpriteText();
-        private readonly SpriteText currentWindowMode = new SpriteText();
-        private readonly SpriteText currentDisplay = new SpriteText();
 
-        private GameWindow window;
+        private DesktopGameWindow window;
         private readonly BindableSize sizeFullscreen = new BindableSize();
         private readonly Bindable<WindowMode> windowMode = new Bindable<WindowMode>();
 
@@ -31,13 +29,10 @@ namespace osu.Framework.Tests.Visual
                 {
                     currentBindableSize,
                     currentActualSize,
-                    currentWindowMode,
-                    currentDisplay
                 },
             };
 
             sizeFullscreen.ValueChanged += newSize => currentBindableSize.Text = $"Fullscreen size: {newSize}";
-            windowMode.ValueChanged += newMode => currentWindowMode.Text = $"Window Mode: {newMode}";
         }
 
         private void testResolution(int w, int h)
@@ -48,10 +43,9 @@ namespace osu.Framework.Tests.Visual
         [BackgroundDependencyLoader]
         private void load(FrameworkConfigManager config, GameHost host)
         {
-            window = host.Window;
+            window = (DesktopGameWindow)host.Window;
             config.BindWith(FrameworkSetting.SizeFullscreen, sizeFullscreen);
             config.BindWith(FrameworkSetting.WindowMode, windowMode);
-            currentWindowMode.Text = $"Window Mode: {windowMode}";
 
             // so the test case doesn't change fullscreen size just when you enter it
             AddStep("nothing", () => { });
@@ -61,9 +55,7 @@ namespace osu.Framework.Tests.Visual
             AddStep("change to fullscreen", () => windowMode.Value = WindowMode.Fullscreen);
             testResolution(1920, 1080);
             testResolution(1280, 960);
-            testResolution(9999, 9999);
             AddStep("go back to windowed", () => windowMode.Value = WindowMode.Windowed);
-            AddStep("change to borderless", () => windowMode.Value = WindowMode.Borderless);
         }
 
         protected override void Update()
@@ -71,7 +63,6 @@ namespace osu.Framework.Tests.Visual
             base.Update();
 
             currentActualSize.Text = $"Window size: {window?.Bounds.Size}";
-            currentDisplay.Text = $"Current display device: {window?.GetCurrentDisplay()}";
         }
     }
 }

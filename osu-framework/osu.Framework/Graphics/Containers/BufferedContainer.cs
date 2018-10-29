@@ -277,15 +277,15 @@ namespace osu.Framework.Graphics.Containers
 
             // Our own draw node should contain our correct color, hence we have
             // to undo our overridden DrawInfo getter here.
-            n.DrawColourInfo.Colour = base.DrawColourInfo.Colour;
+            n.DrawInfo.Colour = base.DrawInfo.Colour;
 
             // Only need to generate child draw nodes if the framebuffers will get redrawn this time around
             addChildDrawNodes = n.RequiresRedraw;
         }
 
-        internal override DrawNode GenerateDrawNodeSubtree(ulong frame, int treeIndex, bool forceNewDrawNode)
+        internal override DrawNode GenerateDrawNodeSubtree(ulong frame, int treeIndex)
         {
-            var result = base.GenerateDrawNodeSubtree(frame, treeIndex, forceNewDrawNode);
+            var result = base.GenerateDrawNodeSubtree(frame, treeIndex);
 
             // The framebuffers may be redrawn this time around, but will be cached the next time around
             addChildDrawNodes = false;
@@ -325,7 +325,7 @@ namespace osu.Framework.Graphics.Containers
                 ++updateVersion;
 
             // We actually only care about Invalidation.MiscGeometry | Invalidation.DrawInfo, but must match the blanket invalidation logic in Drawable.Invalidate
-            if ((invalidation & (Invalidation.Presence | Invalidation.RequiredParentSizeToFit | Invalidation.DrawInfo)) > 0)
+            if ((invalidation & (Invalidation.Colour | Invalidation.RequiredParentSizeToFit | Invalidation.DrawInfo)) > 0)
                 screenSpaceSizeBacking.Invalidate();
 
             return base.Invalidate(invalidation, source, shallPropagate);
@@ -362,11 +362,11 @@ namespace osu.Framework.Graphics.Containers
             childrenUpdateVersion = updateVersion;
         }
 
-        public override DrawColourInfo DrawColourInfo
+        public override DrawInfo DrawInfo
         {
             get
             {
-                DrawColourInfo result = base.DrawColourInfo;
+                DrawInfo result = base.DrawInfo;
 
                 // When drawing our children to the frame buffer we do not
                 // want their colour to be polluted by their parent (us!)

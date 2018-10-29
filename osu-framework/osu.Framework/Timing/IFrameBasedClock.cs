@@ -14,6 +14,7 @@ namespace osu.Framework.Timing
         /// </summary>
         double ElapsedFrameTime { get; }
 
+        double AverageFrameTime { get; }
         double FramesPerSecond { get; }
 
         FrameTimeInfo TimeInfo { get; }

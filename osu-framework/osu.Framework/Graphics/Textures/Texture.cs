@@ -2,7 +2,6 @@
 // Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-framework/master/LICENCE
 
 using System;
-using System.IO;
 using osu.Framework.Graphics.OpenGL.Textures;
 using osu.Framework.Graphics.Primitives;
 using OpenTK;
@@ -15,13 +14,24 @@ namespace osu.Framework.Graphics.Textures
 {
     public class Texture : IDisposable
     {
-        // in case no other textures are used in the project, create a new atlas as a fallback source for the white pixel area (used to draw boxes etc.)
-        private static readonly Lazy<TextureWhitePixel> white_pixel = new Lazy<TextureWhitePixel>(() => new TextureAtlas(3, 3, true).WhitePixel);
+        private static TextureWhitePixel whitePixel;
 
-        public static Texture WhitePixel => white_pixel.Value;
+        public static Texture WhitePixel
+        {
+            get
+            {
+                if (whitePixel == null)
+                {
+                    TextureAtlas atlas = new TextureAtlas(3, 3, true);
+                    whitePixel = atlas.GetWhitePixel();
+                    whitePixel.SetData(new TextureUpload(new byte[] { 255, 255, 255, 255 }));
+                }
 
-        public virtual TextureGL TextureGL { get; }
+                return whitePixel;
+            }
+        }
 
+        public TextureGL TextureGL;
         public string Filename;
         public string AssetName;
 
@@ -30,46 +40,41 @@ namespace osu.Framework.Graphics.Textures
         /// </summary>
         public float ScaleAdjust = 1;
 
+        public bool Disposable = true;
+        public bool IsDisposed { get; private set; }
+
         public float DisplayWidth => Width / ScaleAdjust;
         public float DisplayHeight => Height / ScaleAdjust;
 
-        /// <summary>
-        /// Create a new texture.
-        /// </summary>
-        /// <param name="textureGl">The GL texture.</param>
-        public Texture(TextureGL textureGl)
-        {
-            TextureGL = textureGl ?? throw new ArgumentNullException(nameof(textureGl));
-        }
+        public Texture(TextureGL textureGl) => TextureGL = textureGl ?? throw new ArgumentNullException(nameof(textureGl));
 
         public Texture(int width, int height, bool manualMipmaps = false, All filteringMode = All.Linear)
             : this(new TextureGLSingle(width, height, manualMipmaps, filteringMode))
         {
         }
 
-        /// <summary>
-        /// Creates a texture from a data stream representing a bitmap.
-        /// </summary>
-        /// <param name="stream">The data stream containing the texture data.</param>
-        /// <param name="atlas">The atlas to add the texture to.</param>
-        /// <returns>The created texture.</returns>
-        public static Texture FromStream(Stream stream, TextureAtlas atlas = null)
-        {
-            if (stream == null || stream.Length == 0)
-                return null;
+        #region Disposal
 
-            try
-            {
-                var data = new TextureUpload(stream);
-                Texture tex = atlas == null ? new Texture(data.Width, data.Height) : new Texture(atlas.Add(data.Width, data.Height));
-                tex.SetData(data);
-                return tex;
-            }
-            catch (ArgumentException)
-            {
-                return null;
-            }
+        ~Texture()
+        {
+            Dispose(false);
         }
+
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool isDisposing)
+        {
+            if (IsDisposed)
+                return;
+            IsDisposed = true;
+        }
+
+        #endregion
 
         public int Width
         {
@@ -85,14 +90,9 @@ namespace osu.Framework.Graphics.Textures
 
         public Vector2 Size => new Vector2(Width, Height);
 
-        /// <summary>
-        /// Queue a <see cref="TextureUpload"/> to be uploaded on the draw thread.
-        /// The provided upload will be disposed after the upload is completed.
-        /// </summary>
-        /// <param name="upload"></param>
-        public void SetData(ITextureUpload upload)
+        public void SetData(TextureUpload data)
         {
-            TextureGL?.SetData(upload);
+            TextureGL?.SetData(data);
         }
 
         protected virtual RectangleF TextureBounds(RectangleF? textureRect = null)
@@ -130,25 +130,5 @@ namespace osu.Framework.Graphics.Textures
         }
 
         public override string ToString() => $@"{AssetName} ({Width}, {Height})";
-
-        /// <summary>
-        /// Whether <see cref="TextureGL"/> is in a usable state.
-        /// </summary>
-        public virtual bool Available => !TextureGL.IsDisposed;
-
-        #region Disposal
-
-        // Intentionally no finalizer implementation as our disposal is NOOP. Finalizer is implemented in TextureWithRefCount usage.
-
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-
-        protected virtual void Dispose(bool isDisposing)
-        {
-        }
-
-        #endregion
     }
 }

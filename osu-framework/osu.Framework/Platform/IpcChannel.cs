@@ -17,11 +17,15 @@ namespace osu.Framework.Platform
             this.host.MessageReceived += handleMessage;
         }
 
-        public Task SendMessageAsync(T message) => host.SendMessageAsync(new IpcMessage
+        public async Task SendMessageAsync(T message)
         {
-            Type = typeof(T).AssemblyQualifiedName,
-            Value = message,
-        });
+            var msg = new IpcMessage
+            {
+                Type = typeof(T).AssemblyQualifiedName,
+                Value = message,
+            };
+            await host.SendMessageAsync(msg);
+        }
 
         private void handleMessage(IpcMessage message)
         {

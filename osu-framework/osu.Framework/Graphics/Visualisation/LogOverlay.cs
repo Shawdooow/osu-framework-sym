@@ -20,7 +20,7 @@ namespace osu.Framework.Graphics.Visualisation
     {
         private readonly FillFlowContainer flow;
 
-        protected override bool BlockPositionalInput => false;
+        protected override bool BlockPassThroughMouse => false;
 
         private Bindable<bool> enabled;
 
@@ -153,8 +153,8 @@ namespace osu.Framework.Graphics.Visualisation
 
         private const float font_size = 14;
 
-        public override bool HandleNonPositionalInput => false;
-        public override bool HandlePositionalInput => false;
+        public override bool HandleKeyboardInput => false;
+        public override bool HandleMouseInput => false;
 
         public DrawableLogEntry(LogEntry entry)
         {
@@ -202,6 +202,7 @@ namespace osu.Framework.Graphics.Visualisation
                     Padding = new MarginPadding { Left = target_box_width + 10 },
                     Child = new SpriteText
                     {
+                        AutoSizeAxes = Axes.Y,
                         RelativeSizeAxes = Axes.X,
                         TextSize = font_size,
                         Text = entry.Message

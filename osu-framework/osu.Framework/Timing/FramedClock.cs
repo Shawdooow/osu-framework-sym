@@ -2,6 +2,7 @@
 // Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-framework/master/LICENCE
 
 using osu.Framework.Extensions.TypeExtensions;
+using osu.Framework.MathUtils;
 using System;
 
 namespace osu.Framework.Timing
@@ -30,6 +31,8 @@ namespace osu.Framework.Timing
         }
 
         public FrameTimeInfo TimeInfo => new FrameTimeInfo { Elapsed = ElapsedFrameTime, Current = CurrentTime };
+
+        public double AverageFrameTime { get; private set; }
 
         public double FramesPerSecond { get; private set; }
 
@@ -69,6 +72,8 @@ namespace osu.Framework.Timing
             framesSinceLastCalculation++;
             timeUntilNextCalculation -= ElapsedFrameTime;
             timeSinceLastCalculation += ElapsedFrameTime;
+
+            AverageFrameTime = Interpolation.Damp(AverageFrameTime, ElapsedFrameTime, 0.01, Math.Max(ElapsedFrameTime, 0) / 1000);
 
             LastFrameTime = CurrentTime;
             CurrentTime = SourceTime;

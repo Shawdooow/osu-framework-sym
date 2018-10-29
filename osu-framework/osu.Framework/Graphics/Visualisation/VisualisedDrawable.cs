@@ -2,8 +2,6 @@
 // Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-framework/master/LICENCE
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Sprites;
 using OpenTK;
@@ -11,17 +9,15 @@ using OpenTK.Graphics;
 using osu.Framework.Extensions.Color4Extensions;
 using OpenTK.Input;
 using osu.Framework.Graphics.Shapes;
-using osu.Framework.Allocation;
+using System.Collections.Generic;
 using osu.Framework.Extensions.IEnumerableExtensions;
 using osu.Framework.Input.EventArgs;
 using osu.Framework.Input.States;
 
 namespace osu.Framework.Graphics.Visualisation
 {
-    internal class VisualisedDrawable : Container, IContainVisualisedDrawables
+    internal class VisualisedDrawable : Container
     {
-        private const int line_height = 12;
-
         public Drawable Target { get; }
 
         private bool isHighlighted;
@@ -45,37 +41,34 @@ namespace osu.Framework.Graphics.Visualisation
             }
         }
 
+        private readonly Box background;
+        private readonly Box highlightBackground;
+        private readonly SpriteText text;
+        private readonly Drawable previewBox;
+        private readonly Drawable activityInvalidate;
+        private readonly Drawable activityAutosize;
+        private readonly Drawable activityLayout;
+
         public Action<Drawable> RequestTarget;
         public Action<VisualisedDrawable> HighlightTarget;
 
-        private Box background;
-        private Box highlightBackground;
-        private SpriteText text;
-        private Drawable previewBox;
-        private Drawable activityInvalidate;
-        private Drawable activityAutosize;
-        private Drawable activityLayout;
-        private VisualisedDrawableFlow flow;
+        private const int line_height = 12;
 
-        [Resolved]
-        private DrawVisualiser visualiser { get; set; }
+        private readonly FillFlowContainer<VisualisedDrawable> flow;
+        private readonly TreeContainer tree;
 
-        [Resolved]
-        private TreeContainer tree { get; set; }
-
-        public VisualisedDrawable(Drawable d)
+        public VisualisedDrawable(Drawable d, TreeContainer tree)
         {
+            this.tree = tree;
+
             Target = d;
-        }
 
-        [BackgroundDependencyLoader]
-        private void load()
-        {
+            attachEvents();
+
+            var sprite = Target as Sprite;
+
             RelativeSizeAxes = Axes.X;
             AutoSizeAxes = Axes.Y;
-
-            var spriteTarget = Target as Sprite;
-
             AddRange(new[]
             {
                 activityInvalidate = new Box
@@ -99,12 +92,12 @@ namespace osu.Framework.Graphics.Visualisation
                     Position = new Vector2(0, 0),
                     Alpha = 0
                 },
-                previewBox = spriteTarget?.Texture == null
+                previewBox = sprite?.Texture == null
                     ? previewBox = new Box { Colour = Color4.White }
                     : new Sprite
                     {
-                        Texture = spriteTarget.Texture,
-                        Scale = new Vector2(spriteTarget.Texture.DisplayWidth / spriteTarget.Texture.DisplayHeight, 1),
+                        Texture = sprite.Texture,
+                        Scale = new Vector2(sprite.Texture.DisplayWidth / sprite.Texture.DisplayHeight, 1),
                     },
                 new Container
                 {
@@ -132,7 +125,7 @@ namespace osu.Framework.Graphics.Visualisation
                         text = new SpriteText()
                     }
                 },
-                flow = new VisualisedDrawableFlow
+                flow = new FillFlowContainer<VisualisedDrawable>
                 {
                     Direction = FillDirection.Vertical,
                     RelativeSizeAxes = Axes.X,
@@ -150,24 +143,15 @@ namespace osu.Framework.Graphics.Visualisation
             updateSpecifics();
         }
 
-        protected override void LoadComplete()
-        {
-            base.LoadComplete();
-
-            attachEvents();
-        }
-
         private void attachEvents()
         {
             Target.OnInvalidate += onInvalidate;
-            Target.OnDispose += onDispose;
 
             if (Target is CompositeDrawable da)
             {
                 da.OnAutoSize += onAutoSize;
                 da.ChildBecameAlive += addChild;
                 da.ChildDied += removeChild;
-                da.ChildDepthChanged += depthChanged;
             }
 
             if (Target is FlowContainer<Drawable> df) df.OnLayout += onLayout;
@@ -176,56 +160,44 @@ namespace osu.Framework.Graphics.Visualisation
         private void detachEvents()
         {
             Target.OnInvalidate -= onInvalidate;
-            Target.OnDispose -= onDispose;
 
             if (Target is CompositeDrawable da)
             {
                 da.OnAutoSize -= onAutoSize;
                 da.ChildBecameAlive -= addChild;
                 da.ChildDied -= removeChild;
-                da.ChildDepthChanged -= depthChanged;
             }
 
             if (Target is FlowContainer<Drawable> df) df.OnLayout -= onLayout;
         }
 
+        private readonly Dictionary<Drawable, VisualisedDrawable> visCache = new Dictionary<Drawable, VisualisedDrawable>();
         private void addChild(Drawable drawable)
         {
             // Make sure to never add the DrawVisualiser (recursive scenario)
-            if (drawable == visualiser) return;
+            if (drawable is DrawVisualiser) return;
 
             // Don't add individual characters of SpriteText
             if (Target is SpriteText) return;
 
-            visualiser.GetVisualiserFor(drawable).SetContainer(this);
+            if (!visCache.TryGetValue(drawable, out VisualisedDrawable vis))
+            {
+                vis = visCache[drawable] = new VisualisedDrawable(drawable, tree)
+                {
+                    RequestTarget = d => RequestTarget?.Invoke(d),
+                    HighlightTarget = d => HighlightTarget?.Invoke(d)
+                };
+            }
+
+            flow.Add(vis);
         }
 
         private void removeChild(Drawable drawable)
         {
-            var vis = visualiser.GetVisualiserFor(drawable);
-            if (vis.currentContainer == this)
-                vis.SetContainer(null);
+            if (!visCache.ContainsKey(drawable))
+                return;
+            flow.Remove(visCache[drawable]);
         }
-
-        private void depthChanged(Drawable drawable)
-        {
-            var vis = visualiser.GetVisualiserFor(drawable);
-
-            vis.currentContainer?.RemoveVisualiser(vis);
-            vis.currentContainer?.AddVisualiser(vis);
-        }
-
-        void IContainVisualisedDrawables.AddVisualiser(VisualisedDrawable visualiser)
-        {
-            visualiser.RequestTarget = d => RequestTarget?.Invoke(d);
-            visualiser.HighlightTarget = d => HighlightTarget?.Invoke(d);
-
-            visualiser.Depth = visualiser.Target.Depth;
-
-            flow.Add(visualiser);
-        }
-
-        void IContainVisualisedDrawables.RemoveVisualiser(VisualisedDrawable visualiser) => flow.Remove(visualiser);
 
         public VisualisedDrawable FindVisualisedDrawable(Drawable drawable)
         {
@@ -267,7 +239,6 @@ namespace osu.Framework.Graphics.Visualisation
                 HighlightTarget?.Invoke(this);
                 return true;
             }
-
             return false;
         }
 
@@ -275,8 +246,8 @@ namespace osu.Framework.Graphics.Visualisation
         {
             if (isExpanded)
                 Collapse();
-            else
-                Expand();
+            else Expand();
+
             return true;
         }
 
@@ -294,12 +265,6 @@ namespace osu.Framework.Graphics.Visualisation
             updateSpecifics();
 
             isExpanded = true;
-        }
-
-        public void ExpandAll()
-        {
-            Expand();
-            flow.ForEach(f => f.Expand());
         }
 
         public void Collapse()
@@ -325,12 +290,6 @@ namespace osu.Framework.Graphics.Visualisation
             Scheduler.Add(() => activityInvalidate.FadeOutFromOne(1));
         }
 
-        private void onDispose()
-        {
-            SetContainer(null);
-            Dispose();
-        }
-
         private void updateSpecifics()
         {
             Vector2 posInTree = ToSpaceOfOtherDrawable(Vector2.Zero, tree);
@@ -345,9 +304,7 @@ namespace osu.Framework.Graphics.Visualisation
 
             int childCount = (Target as CompositeDrawable)?.InternalChildren.Count ?? 0;
 
-            text.Text = $"{Target} ({Target.DrawPosition.X:#,0},{Target.DrawPosition.Y:#,0}) {Target.DrawSize.X:#,0}x{Target.DrawSize.Y:#,0}"
-                        + (!isExpanded && childCount > 0 ? $@" ({childCount} children)" : string.Empty);
-
+            text.Text = Target + (!isExpanded && childCount > 0 ? $@" ({childCount} children)" : string.Empty);
             text.Colour = !isExpanded && childCount > 0 ? Color4.LightBlue : Color4.White;
 
             Alpha = Target.IsPresent ? 1 : 0.3f;
@@ -357,34 +314,6 @@ namespace osu.Framework.Graphics.Visualisation
         {
             updateSpecifics();
             base.Update();
-        }
-
-        private IContainVisualisedDrawables currentContainer;
-
-        /// <summary>
-        /// Moves this <see cref="VisualisedDrawable"/> to be contained by another target.
-        /// </summary>
-        /// <remarks>
-        /// The <see cref="VisualisedDrawable"/> is first removed from its current container via <see cref="IContainVisualisedDrawables.RemoveVisualiser"/>,
-        /// prior to being added to the new container via <see cref="IContainVisualisedDrawables.AddVisualiser"/>.
-        /// </remarks>
-        /// <param name="container">The target which should contain this <see cref="VisualisedDrawable"/>.</param>
-        public void SetContainer(IContainVisualisedDrawables container)
-        {
-            currentContainer?.RemoveVisualiser(this);
-
-            // The visualised may have previously been within a container (e.g. flow), which repositioned it
-            // We should make sure that the position is reset before it's added to another container
-            Y = 0;
-
-            container?.AddVisualiser(this);
-
-            currentContainer = container;
-        }
-
-        private class VisualisedDrawableFlow : FillFlowContainer<VisualisedDrawable>
-        {
-            public override IEnumerable<Drawable> FlowingChildren => AliveInternalChildren.Where(d => d.IsPresent).OrderBy(d => -d.Depth).ThenBy(d => ((VisualisedDrawable)d).Target.ChildID);
         }
     }
 }

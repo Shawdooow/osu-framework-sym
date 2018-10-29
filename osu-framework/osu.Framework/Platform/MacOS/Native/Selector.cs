@@ -2,13 +2,19 @@
 // Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-framework/master/LICENCE
 
 using System;
-using System.Runtime.InteropServices;
+using System.Linq;
+using System.Reflection;
 
 namespace osu.Framework.Platform.MacOS.Native
 {
     internal static class Selector
     {
-        [DllImport(Cocoa.LIB_OBJ_C, EntryPoint = "sel_registerName")]
-        public static extern IntPtr Get(string name);
+        private static readonly Type type_selector = typeof(OpenTK.NativeWindow).Assembly.GetTypes().Single(x => x.Name == "Selector");
+        private static readonly MethodInfo method_selector_get = type_selector.GetMethod("Get");
+
+        public static IntPtr Get(string name)
+        {
+            return (IntPtr)method_selector_get.Invoke(null, new object[] { name });
+        }
     }
 }

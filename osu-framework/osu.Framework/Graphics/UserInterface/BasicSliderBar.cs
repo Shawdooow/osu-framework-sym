@@ -2,7 +2,6 @@
 // Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-framework/master/LICENCE
 
 using System;
-using osu.Framework.Extensions.Color4Extensions;
 using OpenTK;
 using OpenTK.Graphics;
 using osu.Framework.Graphics.Shapes;
@@ -12,13 +11,13 @@ namespace osu.Framework.Graphics.UserInterface
     public class BasicSliderBar<T> : SliderBar<T>
         where T : struct, IComparable, IConvertible
     {
-        public Color4 BackgroundColour
+        public Color4 Color
         {
             get => Box.Colour;
             set => Box.Colour = value;
         }
 
-        public Color4 SelectionColour
+        public Color4 SelectionColor
         {
             get => SelectionBox.Colour;
             set => SelectionBox.Colour = value;
@@ -37,12 +36,12 @@ namespace osu.Framework.Graphics.UserInterface
                 Box = new Box
                 {
                     RelativeSizeAxes = Axes.Both,
-                    Colour = Color4.MediumPurple.Darken(0.5f),
+                    Colour = Color4.DarkMagenta,
                 },
                 SelectionBox = new Box
                 {
                     RelativeSizeAxes = Axes.Both,
-                    Colour = Color4.MediumPurple.Lighten(0.1f),
+                    Colour = Color4.White,
                 }
             };
         }

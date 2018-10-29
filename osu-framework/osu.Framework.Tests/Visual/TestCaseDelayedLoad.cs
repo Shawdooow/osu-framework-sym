@@ -48,7 +48,7 @@ namespace osu.Framework.Tests.Visual
                             RelativeSizeAxes = Axes.Both,
                             Children = new Drawable[]
                             {
-                                new TestBox { RelativeSizeAxes = Axes.Both }
+                                new TestBox{ RelativeSizeAxes = Axes.Both }
                             }
                         }),
                         new SpriteText { Text = i.ToString() },
@@ -66,28 +66,28 @@ namespace osu.Framework.Tests.Visual
 
         private class FillFlowContainerNoInput : FillFlowContainer<Container>
         {
-            public override bool HandleNonPositionalInput => false;
-            public override bool HandlePositionalInput => false;
+            public override bool HandleKeyboardInput => false;
+            public override bool HandleMouseInput => false;
+        }
+    }
+
+    public class TestBox : Container
+    {
+        public TestBox()
+        {
+            RelativeSizeAxes = Axes.Both;
         }
 
-        public class TestBox : Container
+        [BackgroundDependencyLoader]
+        private void load()
         {
-            public TestBox()
+            Child = new SpriteText
             {
-                RelativeSizeAxes = Axes.Both;
-            }
-
-            [BackgroundDependencyLoader]
-            private void load()
-            {
-                Child = new SpriteText
-                {
-                    Colour = Color4.Yellow,
-                    Text = @"loaded",
-                    Anchor = Anchor.Centre,
-                    Origin = Anchor.Centre,
-                };
-            }
+                Colour = Color4.Yellow,
+                Text = @"loaded",
+                Anchor = Anchor.Centre,
+                Origin = Anchor.Centre,
+            };
         }
     }
 }

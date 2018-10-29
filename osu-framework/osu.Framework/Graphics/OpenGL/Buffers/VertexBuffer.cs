@@ -56,7 +56,12 @@ namespace osu.Framework.Graphics.OpenGL.Buffers
             if (IsDisposed)
                 throw new ObjectDisposedException(ToString(), "Can not resize disposed vertex buffers.");
 
-            Array.Resize(ref Vertices, amountVertices);
+            T[] oldVertices = Vertices;
+            Vertices = new T[amountVertices];
+
+            if (oldVertices != null)
+                for (int i = 0; i < oldVertices.Length && i < Vertices.Length; ++i)
+                    Vertices[i] = oldVertices[i];
 
             if (GLWrapper.BindBuffer(BufferTarget.ArrayBuffer, vboId))
                 VertexUtils<T>.Bind();

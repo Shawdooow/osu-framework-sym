@@ -2,10 +2,8 @@
 // Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-framework/master/LICENCE
 
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using osu.Framework.Configuration;
 using osu.Framework.Input;
 using OpenTK;
@@ -24,9 +22,6 @@ namespace osu.Framework.Platform
         private readonly BindableDouble windowPositionX = new BindableDouble();
         private readonly BindableDouble windowPositionY = new BindableDouble();
 
-        private DisplayDevice lastFullscreenDisplay;
-        private bool inWindowModeTransition;
-
         public readonly Bindable<WindowMode> WindowMode = new Bindable<WindowMode>();
 
         public readonly Bindable<ConfineMouseMode> ConfineMouseMode = new Bindable<ConfineMouseMode>();
@@ -37,9 +32,7 @@ namespace osu.Framework.Platform
 
         public readonly BindableBool MapAbsoluteInputToWindow = new BindableBool();
 
-        public override DisplayDevice GetCurrentDisplay() => DisplayDevice.FromRectangle(Bounds) ?? DisplayDevice.Default;
-
-        public override IEnumerable<DisplayResolution> AvailableResolutions => GetCurrentDisplay().AvailableResolutions;
+        public override DisplayDevice GetCurrentDisplay() => DisplayDevice.Default;
 
         protected DesktopGameWindow()
             : base(default_width, default_height)
@@ -48,9 +41,7 @@ namespace osu.Framework.Platform
             Move += OnMove;
         }
 
-        public virtual void SetIconFromStream(Stream stream)
-        {
-        }
+        public virtual void SetIconFromStream(Stream stream) { }
 
         public override void SetupWindow(FrameworkConfigManager config)
         {
@@ -59,7 +50,7 @@ namespace osu.Framework.Platform
             sizeFullscreen.ValueChanged += newSize =>
             {
                 if (WindowState == WindowState.Fullscreen)
-                    ChangeResolution(GetCurrentDisplay(), newSize);
+                    changeResolution(newSize);
             };
 
             config.BindWith(FrameworkSetting.WindowedSize, sizeWindowed);
@@ -82,30 +73,31 @@ namespace osu.Framework.Platform
             Exited += onExit;
         }
 
-        protected virtual void ChangeResolution(DisplayDevice display, Size newSize)
+        private void changeResolution(Size newSize)
         {
-            if (newSize.Width == display.Width && newSize.Height == display.Height)
+            var currentDisplay = DisplayDevice.Default;
+
+            if (newSize.Width == currentDisplay.Width && newSize.Height == currentDisplay.Height)
                 return;
 
-            var newResolution = display.AvailableResolutions
-                                              .Where(r => r.Width == newSize.Width && r.Height == newSize.Height)
-                                              .OrderByDescending(r => r.RefreshRate)
-                                              .ThenByDescending(r => r.BitsPerPixel)
-                                              .FirstOrDefault();
+            DisplayResolution newResolution = currentDisplay.SelectResolution(
+                newSize.Width,
+                newSize.Height,
+                currentDisplay.BitsPerPixel,
+                currentDisplay.RefreshRate
+            );
 
-            if (newResolution == null)
+            if (newResolution.Width == currentDisplay.Width && newResolution.Height == currentDisplay.Height)
             {
-                // we wanted a new resolution but got nothing, which means OpenTK didn't find this resolution
-                RestoreResolution(display);
+                // we wanted a new resolution but got the old one, which means OpenTK didn't find this resolution
+                currentDisplay.RestoreResolution();
             }
             else
             {
-                display.ChangeResolution(newResolution);
+                currentDisplay.ChangeResolution(newResolution);
                 ClientSize = newSize;
             }
         }
-
-        protected virtual void RestoreResolution(DisplayDevice displayDevice) => displayDevice.RestoreResolution();
 
         protected void OnResize(object sender, EventArgs e)
         {
@@ -121,12 +113,11 @@ namespace osu.Framework.Platform
 
         protected void OnMove(object sender, EventArgs e)
         {
-            if (inWindowModeTransition) return;
-            if (WindowMode.Value == Configuration.WindowMode.Windowed)
+            // The game is windowed and the whole window is on the screen (it is not minimized or moved outside of the screen)
+            if (WindowMode.Value == Configuration.WindowMode.Windowed
+                && Position.X > 0 && Position.X < 1
+                && Position.Y > 0 && Position.Y < 1)
             {
-                // Values are clamped to a range of [-0.5, 1.5], so if more than half of the window was
-                // outside of the combined screen area before the game was closed, it will be moved so
-                // that at least half of it is on screen after a restart.
                 windowPositionX.Value = Position.X;
                 windowPositionY.Value = Position.Y;
             }
@@ -152,53 +143,34 @@ namespace osu.Framework.Platform
                 CursorState &= ~CursorState.Confined;
         }
 
-        private void windowMode_ValueChanged(WindowMode newMode) => UpdateWindowMode(newMode);
-
-        protected virtual void UpdateWindowMode(WindowMode newMode)
+        private void windowMode_ValueChanged(WindowMode newMode)
         {
-            var currentDisplay = GetCurrentDisplay();
-
-            try
+            switch (newMode)
             {
-                inWindowModeTransition = true;
-                switch (newMode)
-                {
-                    case Configuration.WindowMode.Fullscreen:
-                        ChangeResolution(currentDisplay, sizeFullscreen);
-                        lastFullscreenDisplay = currentDisplay;
+                case Configuration.WindowMode.Fullscreen:
+                    changeResolution(sizeFullscreen);
 
-                        WindowState = WindowState.Fullscreen;
-                        break;
-                    case Configuration.WindowMode.Borderless:
-                        if (lastFullscreenDisplay != null)
-                            RestoreResolution(lastFullscreenDisplay);
-                        lastFullscreenDisplay = null;
+                    WindowState = WindowState.Fullscreen;
+                    break;
+                case Configuration.WindowMode.Borderless:
+                    DisplayDevice.Default.RestoreResolution();
 
-                        WindowState = WindowState.Maximized;
-                        WindowBorder = WindowBorder.Hidden;
+                    WindowState = WindowState.Maximized;
+                    WindowBorder = WindowBorder.Hidden;
 
-                        // must add 1 to enter borderless
-                        ClientSize = new Size(currentDisplay.Bounds.Width + 1, currentDisplay.Bounds.Height + 1);
-                        Location = currentDisplay.Bounds.Location;
-                        break;
-                    case Configuration.WindowMode.Windowed:
-                        if (lastFullscreenDisplay != null)
-                            RestoreResolution(lastFullscreenDisplay);
-                        lastFullscreenDisplay = null;
+                    //must add 1 to enter borderless
+                    ClientSize = new Size(DisplayDevice.Default.Bounds.Width + 1, DisplayDevice.Default.Bounds.Height + 1);
+                    Position = Vector2.Zero;
+                    break;
+                default:
+                    DisplayDevice.Default.RestoreResolution();
 
-                        var newSize = sizeWindowed.Value;
+                    WindowState = WindowState.Normal;
+                    WindowBorder = WindowBorder.Resizable;
 
-                        WindowState = WindowState.Normal;
-                        WindowBorder = WindowBorder.Resizable;
-
-                        ClientSize = newSize;
-                        Position = new Vector2((float)windowPositionX, (float)windowPositionY);
-                        break;
-                }
-            }
-            finally
-            {
-                inWindowModeTransition = false;
+                    ClientSize = sizeWindowed;
+                    Position = new Vector2((float)windowPositionX, (float)windowPositionY);
+                    break;
             }
 
             ConfineMouseMode.TriggerChange();
@@ -213,31 +185,21 @@ namespace osu.Framework.Platform
                     break;
             }
 
-            if (lastFullscreenDisplay != null)
-                RestoreResolution(lastFullscreenDisplay);
-            lastFullscreenDisplay = null;
+            DisplayDevice.Default.RestoreResolution();
         }
 
         public Vector2 Position
         {
             get
             {
-                var display = GetCurrentDisplay();
-                var relativeLocation = new Point(Location.X - display.Bounds.X, Location.Y - display.Bounds.Y);
-
-                return new Vector2(
-                    display.Width  > Size.Width  ? (float)relativeLocation.X / (display.Width  - Size.Width)  : 0,
-                    display.Height > Size.Height ? (float)relativeLocation.Y / (display.Height - Size.Height) : 0);
+                return new Vector2((float)Location.X / (DisplayDevice.Default.Width - Size.Width),
+                    (float)Location.Y / (DisplayDevice.Default.Height - Size.Height));
             }
             set
             {
-                var display = GetCurrentDisplay();
-
-                var relativeLocation = new Point(
-                    (int)Math.Round((display.Width - Size.Width) * value.X),
-                    (int)Math.Round((display.Height - Size.Height) * value.Y));
-
-                Location = new Point(relativeLocation.X + display.Bounds.X, relativeLocation.Y + display.Bounds.Y);
+                Location = new Point(
+                    (int)Math.Round((DisplayDevice.Default.Width - Size.Width) * value.X),
+                    (int)Math.Round((DisplayDevice.Default.Height - Size.Height) * value.Y));
             }
         }
 

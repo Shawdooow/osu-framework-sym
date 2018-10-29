@@ -30,15 +30,12 @@ namespace osu.Framework.Graphics.Lines
             }
         }
 
-        public override bool ReceivePositionalInputAt(Vector2 screenSpacePos)
+        public override bool ReceiveMouseInputAt(Vector2 screenSpacePos)
         {
             var localPos = ToLocalSpace(screenSpacePos);
             var pathWidthSquared = PathWidth * PathWidth;
 
-            foreach (var t in segments)
-                if (t.DistanceSquaredToPoint(localPos) <= pathWidthSquared)
-                    return true;
-            return false;
+            return segments.Any(s => s.DistanceSquaredToPoint(localPos) <= pathWidthSquared);
         }
 
         public Vector2 PositionInBoundingBox(Vector2 pos) => pos - new Vector2(minX, minY);
@@ -139,12 +136,17 @@ namespace osu.Framework.Graphics.Lines
 
         private readonly PathDrawNodeSharedData pathDrawNodeSharedData = new PathDrawNodeSharedData();
 
+        public bool CanDisposeTexture { get; protected set; }
+
         #region Disposal
 
         protected override void Dispose(bool isDisposing)
         {
-            texture?.Dispose();
-            texture = null;
+            if (CanDisposeTexture)
+            {
+                texture?.Dispose();
+                texture = null;
+            }
 
             base.Dispose(isDisposing);
         }
@@ -187,9 +189,10 @@ namespace osu.Framework.Graphics.Lines
                 if (value == texture)
                     return;
 
-                texture?.Dispose();
-                texture = value;
+                if (texture != null && CanDisposeTexture)
+                    texture.Dispose();
 
+                texture = value;
                 Invalidate(Invalidation.DrawNode);
             }
         }

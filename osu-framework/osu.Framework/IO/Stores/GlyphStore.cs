@@ -3,130 +3,153 @@
 
 using Cyotek.Drawing.BitmapFont;
 using osu.Framework.Allocation;
+using osu.Framework.Graphics.Textures;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using osu.Framework.Graphics.Textures;
 using osu.Framework.Logging;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Advanced;
-using SixLabors.ImageSharp.PixelFormats;
 
 namespace osu.Framework.IO.Stores
 {
-    public class GlyphStore : IResourceStore<TextureUpload>
+    public class GlyphStore : IResourceStore<RawTexture>
     {
         private readonly string assetName;
 
-        public readonly string FontName;
+        private readonly string fontName;
 
         private const float default_size = 96;
 
         private readonly ResourceStore<byte[]> store;
 
-        protected BitmapFont Font => completionSource.Task.Result;
+        private BitmapFont font;
 
-        private readonly TimedExpiryCache<int, TextureUpload> texturePages = new TimedExpiryCache<int, TextureUpload>();
+        protected BitmapFont Font
+        {
+            get
+            {
+                try
+                {
+                    fontLoadTask?.Wait();
+                }
+                catch
+                {
+                    return null;
+                }
 
-        private readonly TaskCompletionSource<BitmapFont> completionSource = new TaskCompletionSource<BitmapFont>();
+                return font;
+            }
+        }
+
+        private readonly TimedExpiryCache<int, RawTexture> texturePages = new TimedExpiryCache<int, RawTexture>();
 
         private Task fontLoadTask;
 
-        public GlyphStore(ResourceStore<byte[]> store, string assetName = null)
+        public GlyphStore(ResourceStore<byte[]> store, string assetName = null, bool precache = false)
         {
             this.store = store;
             this.assetName = assetName;
 
-            FontName = assetName?.Split('/').Last();
+            fontName = assetName?.Split('/').Last();
+
+            fontLoadTask = readFontMetadataAsync(precache);
         }
 
-        public Task LoadFontAsync() => fontLoadTask ?? (fontLoadTask = Task.Factory.StartNew(() =>
+        private async Task readFontMetadataAsync(bool precache)
         {
-            try
+            await Task.Factory.StartNew(() =>
             {
-                var font = new BitmapFont();
-                using (var s = store.GetStream($@"{assetName}.fnt"))
-                    font.LoadText(s);
+                try
+                {
+                    font = new BitmapFont();
+                    using (var s = store.GetStream($@"{assetName}.fnt"))
+                        font.LoadText(s);
 
-                completionSource.SetResult(font);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Couldn't load font asset from {assetName}.");
-                throw;
-            }
-        }, TaskCreationOptions.PreferFairness));
+                    if (precache)
+                        for (int i = 0; i < font.Pages.Length; i++)
+                            getTexturePage(i);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, $"Couldn't load font asset from {assetName}.");
+                    throw;
+                }
+            }, TaskCreationOptions.LongRunning);
+
+            fontLoadTask = null;
+        }
 
         public bool HasGlyph(char c) => Font.Characters.ContainsKey(c);
         public int GetBaseHeight() => Font.BaseHeight;
 
         public int? GetBaseHeight(string name)
         {
-            if (name != FontName)
+            if (name != fontName)
                 return null;
 
             return Font.BaseHeight;
         }
 
-        public TextureUpload Get(string name)
+        public RawTexture Get(string name)
         {
-            if (name.Length > 1 && !name.StartsWith($@"{FontName}/", StringComparison.Ordinal))
+            if (name.Length > 1 && !name.StartsWith($@"{fontName}/", StringComparison.Ordinal))
                 return null;
 
-            if (!Font.Characters.TryGetValue(name.Last(), out Character c))
+            try
+            {
+                fontLoadTask?.Wait();
+            }
+            catch
+            {
+                return null;
+            }
+
+            if (!font.Characters.TryGetValue(name.Last(), out Character c))
                 return null;
 
-            return loadCharacter(c);
-        }
-
-        public virtual async Task<TextureUpload> GetAsync(string name)
-        {
-            if (name.Length > 1 && !name.StartsWith($@"{FontName}/", StringComparison.Ordinal))
-                return null;
-
-            if (!(await completionSource.Task).Characters.TryGetValue(name.Last(), out Character c))
-                return null;
-
-            return loadCharacter(c);
-        }
-
-        private TextureUpload loadCharacter(Character c)
-        {
-            var page = getTexturePage(c.TexturePage);
+            RawTexture page = getTexturePage(c.TexturePage);
             loadedGlyphCount++;
 
             int width = c.Bounds.Width + c.Offset.X + 1;
             int height = c.Bounds.Height + c.Offset.Y + 1;
-
-            var image = new Image<Rgba32>(width, height);
-
-            var pixels = image.GetPixelSpan();
-            var span = page.Data;
+            int length = width * height * 4;
+            byte[] pixels = new byte[length];
 
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
-                    int dest = y * width + x;
-
-                    if (x >= c.Offset.X && y >= c.Offset.Y && x - c.Offset.X < c.Bounds.Width && y - c.Offset.Y < c.Bounds.Height)
-                        pixels[dest] = span[(c.Bounds.Y + y - c.Offset.Y) * page.Width + (c.Bounds.X + x - c.Offset.X)];
+                    int desti = y * width * 4 + x * 4;
+                    if (x >= c.Offset.X && y >= c.Offset.Y
+                        && x - c.Offset.X < c.Bounds.Width && y - c.Offset.Y < c.Bounds.Height)
+                    {
+                        int srci = (c.Bounds.Y + y - c.Offset.Y) * page.Width * 4
+                                   + (c.Bounds.X + x - c.Offset.X) * 4;
+                        pixels[desti] = page.Data[srci];
+                        pixels[desti + 1] = page.Data[srci + 1];
+                        pixels[desti + 2] = page.Data[srci + 2];
+                        pixels[desti + 3] = page.Data[srci + 3];
+                    }
                     else
-                        pixels[dest] = new Rgba32(255, 255, 255, 0);
+                    {
+                        pixels[desti] = 255;
+                        pixels[desti + 1] = 255;
+                        pixels[desti + 2] = 255;
+                        pixels[desti + 3] = 0;
+                    }
                 }
             }
 
-            return new TextureUpload(image);
+            return new RawTexture(width, height, pixels);
         }
 
-        private TextureUpload getTexturePage(int texturePage)
+        private RawTexture getTexturePage(int texturePage)
         {
-            if (!texturePages.TryGetValue(texturePage, out TextureUpload t))
+            if (!texturePages.TryGetValue(texturePage, out RawTexture t))
             {
                 loadedPageCount++;
-                using (var stream = store.GetStream($@"{assetName}_{texturePage.ToString().PadLeft((Font.Pages.Length - 1).ToString().Length, '0')}.png"))
-                    texturePages.Add(texturePage, t = new TextureUpload(stream));
+                using (var stream = store.GetStream($@"{assetName}_{texturePage.ToString().PadLeft((font.Pages.Length - 1).ToString().Length, '0')}.png"))
+                    texturePages.Add(texturePage, t = new RawTexture(stream));
             }
 
             return t;

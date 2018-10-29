@@ -2,7 +2,6 @@
 // Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-framework/master/LICENCE
 
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace osu.Framework.IO.Stores
 {
@@ -74,12 +73,12 @@ namespace osu.Framework.IO.Stores
         /// </summary>
         /// <param name="name">The name of the object.</param>
         /// <returns>The object.</returns>
-        public override async Task<T> GetAsync(string name)
+        public override T Get(string name)
         {
             if (cache.TryGetValue(name, out T result))
                 return result;
 
-            result = await base.GetAsync(name);
+            result = base.Get(name);
 
             if (result != null)
                 cache[name] = result;

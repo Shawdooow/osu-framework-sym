@@ -16,12 +16,17 @@ namespace osu.Framework.Input
     /// </summary>
     public class PlatformActionContainer : KeyBindingContainer<PlatformAction>, IHandleGlobalInput
     {
-        [Resolved]
-        private GameHost host { get; set; }
+        private GameHost host;
 
         public PlatformActionContainer()
             : base(SimultaneousBindingMode.None, KeyCombinationMatchingMode.Modifiers)
         {
+        }
+
+        [BackgroundDependencyLoader]
+        private void load(GameHost host)
+        {
+            this.host = host;
         }
 
         public override IEnumerable<KeyBinding> DefaultKeyBindings => host.PlatformKeyBindings;

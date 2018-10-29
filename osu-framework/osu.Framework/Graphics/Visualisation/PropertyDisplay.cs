@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using osu.Framework.Extensions.IEnumerableExtensions;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Sprites;
 using OpenTK;
@@ -50,22 +49,20 @@ namespace osu.Framework.Graphics.Visualisation
             if (source == null)
                 return;
 
-            var allMembers = new HashSet<MemberInfo>(new MemberInfoComparer());
-
             Type type = source.GetType();
-            while (type != null && type != typeof(object))
-            {
-                type.GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
-                    .Where(m => m is FieldInfo || m is PropertyInfo pi && pi.GetMethod != null)
-                    .ForEach(m => allMembers.Add(m));
 
-                type = type.BaseType;
-            }
+            var properties = (IEnumerable<MemberInfo>)type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                                                          // Only properties which we can read
+                                                          .Where(p => p.CanRead);
 
-            // Order by upper then lower-case, and exclude auto-generated backing fields of properties
-            AddRange(allMembers.OrderBy(m => m.Name[0]).ThenBy(m => m.Name)
-                               .Where(m => m.GetCustomAttribute<CompilerGeneratedAttribute>() == null)
-                               .Select(m => new PropertyItem(m, source)));
+            var fields = (IEnumerable<MemberInfo>)type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                                                      // Exclude the backing fields of properties
+                                                      .Where(f => f.GetCustomAttribute<CompilerGeneratedAttribute>() == null);
+
+            // Upper, then lower-case
+            var allMembers = properties.Concat(fields).OrderBy(m => (int)m.Name[0]).ThenBy(m => m.Name);
+
+            AddRange(allMembers.Select(member => new PropertyItem(member, source)));
         }
 
         protected override void PopIn()
@@ -186,13 +183,6 @@ namespace osu.Framework.Graphics.Visualisation
                 lastValue = value;
                 valueText.Text = value.ToString();
             }
-        }
-
-        private class MemberInfoComparer : IEqualityComparer<MemberInfo>
-        {
-            public bool Equals(MemberInfo x, MemberInfo y) => string.Equals(x?.Name, y?.Name);
-
-            public int GetHashCode(MemberInfo obj) => obj.Name.GetHashCode();
         }
     }
 }

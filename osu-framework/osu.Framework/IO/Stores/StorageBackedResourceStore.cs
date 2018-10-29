@@ -3,7 +3,6 @@
 
 using System;
 using System.IO;
-using System.Threading.Tasks;
 using osu.Framework.Platform;
 
 namespace osu.Framework.IO.Stores
@@ -24,27 +23,16 @@ namespace osu.Framework.IO.Stores
         {
             using (Stream stream = storage.GetStream(name))
             {
-                if (stream == null) return null;
-
                 byte[] buffer = new byte[stream.Length];
                 stream.Read(buffer, 0, buffer.Length);
                 return buffer;
             }
         }
 
-        public virtual async Task<byte[]> GetAsync(string name)
+        public Stream GetStream(string name)
         {
-            using (Stream stream = storage.GetStream(name))
-            {
-                if (stream == null) return null;
-
-                byte[] buffer = new byte[stream.Length];
-                await stream.ReadAsync(buffer, 0, buffer.Length);
-                return buffer;
-            }
+            return storage.GetStream(name);
         }
-
-        public Stream GetStream(string name) => storage.GetStream(name);
 
         #region IDisposable Support
 

@@ -2,10 +2,7 @@
 // Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-framework/master/LICENCE
 
 using System.Linq;
-using OpenTK;
-using osu.Framework.Allocation;
 using osu.Framework.Audio;
-using osu.Framework.Configuration;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Performance;
@@ -13,10 +10,12 @@ using osu.Framework.Graphics.Shaders;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.Graphics.Visualisation;
 using osu.Framework.Input;
-using osu.Framework.Input.Bindings;
 using osu.Framework.IO.Stores;
-using osu.Framework.Localisation;
 using osu.Framework.Platform;
+using osu.Framework.Allocation;
+using osu.Framework.Configuration;
+using osu.Framework.Input.Bindings;
+using OpenTK;
 using GameWindow = osu.Framework.Platform.GameWindow;
 
 namespace osu.Framework
@@ -38,8 +37,6 @@ namespace osu.Framework
         public ShaderManager Shaders;
 
         public FontStore Fonts;
-
-        protected LocalisationManager Localisation { get; private set; }
 
         private readonly Container content;
         private PerformanceOverlay performanceContainer;
@@ -102,8 +99,8 @@ namespace osu.Framework
             Resources = new ResourceStore<byte[]>();
             Resources.AddStore(new NamespacedResourceStore<byte[]>(new DllResourceStore(@"osu.Framework.dll"), @"Resources"));
 
-            Textures = new TextureStore(new TextureLoaderStore(new NamespacedResourceStore<byte[]>(Resources, @"Textures")));
-            Textures.AddStore(new TextureLoaderStore(new OnlineStore()));
+            Textures = new TextureStore(new RawTextureLoaderStore(new NamespacedResourceStore<byte[]>(Resources, @"Textures")));
+            Textures.AddStore(new RawTextureLoaderStore(new OnlineStore()));
             dependencies.Cache(Textures);
 
             var tracks = new ResourceStore<byte[]>(Resources);
@@ -128,11 +125,11 @@ namespace osu.Framework
             Shaders = new ShaderManager(new NamespacedResourceStore<byte[]>(Resources, @"Shaders"));
             dependencies.Cache(Shaders);
 
-            Fonts = new FontStore(new GlyphStore(Resources, @"Fonts/OpenSans"));
+            Fonts = new FontStore(new GlyphStore(Resources, @"Fonts/OpenSans"))
+            {
+                ScaleAdjust = 100
+            };
             dependencies.Cache(Fonts);
-
-            Localisation = new LocalisationManager(config);
-            dependencies.Cache(Localisation);
         }
 
         protected override void LoadComplete()

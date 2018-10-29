@@ -58,7 +58,10 @@ namespace osu.Framework.Audio
             Frequency.ValueChanged += InvalidateState;
         }
 
-        internal void InvalidateState(double newValue = 0) => EnqueueAction(OnStateChanged);
+        internal void InvalidateState(double newValue = 0)
+        {
+            EnqueueAction(OnStateChanged);
+        }
 
         internal virtual void OnStateChanged()
         {
@@ -81,7 +84,7 @@ namespace osu.Framework.Audio
             RemoveAdjustment(AdjustableProperty.Volume, component.VolumeCalculated);
         }
 
-        public void AddAdjustment(AdjustableProperty type, BindableDouble adjustBindable) => EnqueueAction(() =>
+        public void AddAdjustment(AdjustableProperty type, BindableDouble adjustBindable)
         {
             switch (type)
             {
@@ -106,9 +109,9 @@ namespace osu.Framework.Audio
             }
 
             InvalidateState();
-        });
+        }
 
-        public void RemoveAdjustment(AdjustableProperty type, BindableDouble adjustBindable) => EnqueueAction(() =>
+        public void RemoveAdjustment(AdjustableProperty type, BindableDouble adjustBindable)
         {
             switch (type)
             {
@@ -124,7 +127,7 @@ namespace osu.Framework.Audio
             }
 
             InvalidateState();
-        });
+        }
 
         protected override void Dispose(bool disposing)
         {

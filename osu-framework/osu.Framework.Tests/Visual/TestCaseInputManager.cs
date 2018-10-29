@@ -172,12 +172,13 @@ namespace osu.Framework.Tests.Visual
             }
         }
 
-        [Resolved]
-        private FrameworkConfigManager config { get; set; }
+        private FrameworkConfigManager config;
 
         [BackgroundDependencyLoader]
-        private void load()
+        private void load(FrameworkConfigManager config)
         {
+            this.config = config;
+
             AddSliderStep("Cursor sensivity", 0.5, 5, 1, setCursorSensivityConfig);
             setCursorSensivityConfig(1);
             AddToggleStep("Toggle raw input", setRawInputConfig);

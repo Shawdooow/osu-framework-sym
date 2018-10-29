@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using osu.Framework.Logging;
 using Symcol.Networking.NetworkingClients;
 using Symcol.Networking.Packets;
@@ -15,8 +14,6 @@ namespace Symcol.Networking.NetworkingHandlers.Peer
         /// </summary>
         public Action<Host> OnConnectedToHost;
 
-        public ConnectionStatues ConnectionStatues { get; protected set; }
-
         #endregion
 
         public PeerNetworkingHandler()
@@ -26,15 +23,23 @@ namespace Symcol.Networking.NetworkingHandlers.Peer
 
         #region Update Loop
 
+        protected override void Update()
+        {
+            base.Update();
+
+            foreach (Packet p in ReceivePackets())
+                HandlePackets(p);
+        }
+
         /// <summary>
         /// Handle any packets we got before sending them to OnPackerReceive
         /// </summary>
-        /// <param name="info"></param>
-        protected override void HandlePackets(PacketInfo info)
+        /// <param name="packet"></param>
+        protected override void HandlePackets(Packet packet)
         {
             Logger.Log($"Recieved a Packet from {NetworkingClient.EndPoint}", LoggingTarget.Network, LogLevel.Debug);
 
-            switch (info.Packet)
+            switch (packet)
             {
                 case ConnectedPacket _:
                     ConnectionStatues = ConnectionStatues.Connected;
@@ -49,23 +54,12 @@ namespace Symcol.Networking.NetworkingHandlers.Peer
                     break;
             }
 
-            OnPacketReceive?.Invoke(info);
+            OnPacketReceive?.Invoke(packet);
         }
 
         #endregion
 
         #region Packet and Client Helper Functions
-
-        protected override List<PacketInfo> ReceivePackets()
-        {
-            List<PacketInfo> packets = new List<PacketInfo>();
-            for (int i = 0; i < NetworkingClient?.Available; i++)
-                packets.Add(new PeerPacketInfo
-                {
-                    Packet = NetworkingClient.GetPacket()
-                });
-            return packets;
-        }
 
         protected override Packet SignPacket(Packet packet)
         {
@@ -97,7 +91,6 @@ namespace Symcol.Networking.NetworkingHandlers.Peer
             {
                 Logger.Log($"Attempting to connect to {NetworkingClient.Address}", LoggingTarget.Network);
                 SendToServer(new ConnectPacket());
-                ConnectionStatues = ConnectionStatues.Connecting;
             }
             //else
                 //Logger.Log("We are already connecting, please wait for us to fail before retrying!", LoggingTarget.Network);
@@ -116,6 +109,11 @@ namespace Symcol.Networking.NetworkingHandlers.Peer
         protected override void Dispose(bool isDisposing)
         {
             SendToServer(new DisconnectPacket());
+
+            //foreach (NetworkingClient c in NetworkingClients)
+            //c?.Dispose();
+
+            //NetworkingClients = new List<NetworkingClient>();
 
             base.Dispose(isDisposing);
         }

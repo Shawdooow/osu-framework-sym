@@ -7,16 +7,16 @@ using System.Linq;
 using osu.Framework.Allocation;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
-using osu.Framework.Input.Events;
+using osu.Framework.Input.EventArgs;
 using osu.Framework.Input.Handlers;
 using osu.Framework.Input.StateChanges;
-using osu.Framework.Input.StateChanges.Events;
 using osu.Framework.Input.States;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
 using osu.Framework.Statistics;
 using OpenTK;
 using OpenTK.Input;
+using JoystickEventArgs = osu.Framework.Input.EventArgs.JoystickEventArgs;
 using JoystickState = osu.Framework.Input.States.JoystickState;
 using KeyboardState = osu.Framework.Input.States.KeyboardState;
 using MouseState = osu.Framework.Input.States.MouseState;
@@ -35,8 +35,7 @@ namespace osu.Framework.Input
         /// </summary>
         private const int repeat_tick_rate = 70;
 
-        [Resolved(CanBeNull = true)]
-        protected GameHost Host { get; private set; }
+        protected GameHost Host;
 
         internal Drawable FocusedDrawable;
 
@@ -107,13 +106,13 @@ namespace osu.Framework.Input
         /// that the return value of <see cref="Drawable.OnHover(InputState)"/> is not taken
         /// into account.
         /// </summary>
-        public IEnumerable<Drawable> PositionalInputQueue => buildPositionalInputQueue(CurrentState);
+        public IEnumerable<Drawable> PositionalInputQueue => buildMouseInputQueue(CurrentState);
 
         /// <summary>
         /// Contains all <see cref="Drawable"/>s in top-down order which are considered
         /// for non-positional input.
         /// </summary>
-        public IEnumerable<Drawable> NonPositionalInputQueue => buildNonPositionalInputQueue();
+        public IEnumerable<Drawable> InputQueue => buildInputQueue();
 
         private readonly Dictionary<MouseButton, MouseButtonEventManager> mouseButtonEventManagers = new Dictionary<MouseButton, MouseButtonEventManager>();
 
@@ -145,6 +144,12 @@ namespace osu.Framework.Input
                 default:
                     return new MouseMinorButtonEventManager(button);
             }
+        }
+
+        [BackgroundDependencyLoader(permitNulls: true)]
+        private void load(GameHost host)
+        {
+            Host = host;
         }
 
         /// <summary>
@@ -193,7 +198,7 @@ namespace osu.Framework.Input
             if (previousFocus != null)
             {
                 previousFocus.HasFocus = false;
-                previousFocus.TriggerEvent(new FocusLostEvent(state));
+                previousFocus.TriggerOnFocusLost(state);
 
                 if (FocusedDrawable != null) throw new InvalidOperationException($"Focus cannot be changed inside {nameof(OnFocusLost)}");
             }
@@ -205,33 +210,25 @@ namespace osu.Framework.Input
             if (FocusedDrawable != null)
             {
                 FocusedDrawable.HasFocus = true;
-                FocusedDrawable.TriggerEvent(new FocusEvent(state));
+                FocusedDrawable.TriggerOnFocus(state);
             }
 
             return true;
         }
 
-        internal override bool BuildNonPositionalInputQueue(List<Drawable> queue, bool allowBlocking = true)
+        internal override bool BuildKeyboardInputQueue(List<Drawable> queue, bool allowBlocking = true)
         {
             if (!allowBlocking)
-                base.BuildNonPositionalInputQueue(queue, false);
+                base.BuildKeyboardInputQueue(queue, false);
 
             return false;
         }
 
-        internal override bool BuildPositionalInputQueue(Vector2 screenSpacePos, List<Drawable> queue) => false;
-
-        private bool hoverEventsUpdated;
+        internal override bool BuildMouseInputQueue(Vector2 screenSpaceMousePos, List<Drawable> queue) => false;
 
         protected override void Update()
         {
             unfocusIfNoLongerValid();
-
-            // aggressively clear to avoid holding references.
-            inputQueue.Clear();
-            positionalInputQueue.Clear();
-
-            hoverEventsUpdated = false;
 
             foreach (var result in GetPendingInputs())
             {
@@ -240,15 +237,15 @@ namespace osu.Framework.Input
 
             if (CurrentState.Mouse.IsPositionValid)
             {
-                PropagateBlockableEvent(PositionalInputQueue.Where(d => d is IRequireHighFrequencyMousePosition), new MouseMoveEvent(CurrentState));
+                foreach (var d in PositionalInputQueue)
+                    if (d is IRequireHighFrequencyMousePosition)
+                        if (d.TriggerOnMouseMove(CurrentState))
+                            break;
             }
 
             updateKeyRepeat(CurrentState);
 
-            // Other inputs or drawable changes may affect hover even if
-            // there were no mouse movements, so it must be updated every frame.
-            if (!hoverEventsUpdated)
-                updateHoverEvents(CurrentState);
+            updateHoverEvents(CurrentState);
 
             if (FocusedDrawable == null)
                 focusTopMostRequestingDrawable();
@@ -280,26 +277,20 @@ namespace osu.Framework.Input
             return inputs;
         }
 
-        private readonly List<Drawable> inputQueue = new List<Drawable>();
-
-        private IEnumerable<Drawable> buildNonPositionalInputQueue()
+        private IEnumerable<Drawable> buildInputQueue()
         {
-            inputQueue.Clear();
+            var inputQueue = new List<Drawable>();
 
             if (this is UserInputManager)
-                FrameStatistics.Increment(StatisticsCounterType.InputQueue);
+                FrameStatistics.Increment(StatisticsCounterType.KeyboardQueue);
 
-            var children = AliveInternalChildren;
-            for (int i = 0; i < children.Count; i++)
-                children[i].BuildNonPositionalInputQueue(inputQueue);
+            foreach (Drawable d in AliveInternalChildren)
+                d.BuildKeyboardInputQueue(inputQueue);
 
             if (!unfocusIfNoLongerValid())
-            {
-                inputQueue.Remove(FocusedDrawable);
-                inputQueue.Add(FocusedDrawable);
-            }
+                inputQueue.Append(FocusedDrawable);
 
-            // queues were created in back-to-front order.
+            // Keyboard and mouse queues were created in back-to-front order.
             // We want input to first reach front-most drawables, so the queues
             // need to be reversed.
             inputQueue.Reverse();
@@ -307,18 +298,15 @@ namespace osu.Framework.Input
             return inputQueue;
         }
 
-        private readonly List<Drawable> positionalInputQueue = new List<Drawable>();
-
-        private IEnumerable<Drawable> buildPositionalInputQueue(InputState state)
+        private IEnumerable<Drawable> buildMouseInputQueue(InputState state)
         {
-            positionalInputQueue.Clear();
+            var positionalInputQueue = new List<Drawable>();
 
             if (this is UserInputManager)
-                FrameStatistics.Increment(StatisticsCounterType.PositionalIQ);
+                FrameStatistics.Increment(StatisticsCounterType.MouseQueue);
 
-            var children = AliveInternalChildren;
-            for (int i = 0; i < children.Count; i++)
-                children[i].BuildPositionalInputQueue(state.Mouse.Position, positionalInputQueue);
+            foreach (Drawable d in AliveInternalChildren)
+                d.BuildMouseInputQueue(state.Mouse.Position, positionalInputQueue);
 
             positionalInputQueue.Reverse();
             return positionalInputQueue;
@@ -333,7 +321,6 @@ namespace osu.Framework.Input
 
             lastHoveredDrawables.Clear();
             lastHoveredDrawables.AddRange(hoveredDrawables);
-
             hoveredDrawables.Clear();
 
             // New drawables shouldn't be hovered if the cursor isn't in the window
@@ -343,7 +330,6 @@ namespace osu.Framework.Input
                 foreach (Drawable d in PositionalInputQueue)
                 {
                     hoveredDrawables.Add(d);
-                    lastHoveredDrawables.Remove(d);
 
                     // Don't need to re-hover those that are already hovered
                     if (d.IsHovered)
@@ -359,7 +345,7 @@ namespace osu.Framework.Input
                     }
 
                     d.IsHovered = true;
-                    if (d.TriggerEvent(new HoverEvent(state)))
+                    if (d.TriggerOnHover(state))
                     {
                         hoverHandledDrawable = d;
                         break;
@@ -368,13 +354,11 @@ namespace osu.Framework.Input
             }
 
             // Unhover all previously hovered drawables which are no longer hovered.
-            foreach (Drawable d in lastHoveredDrawables)
+            foreach (Drawable d in lastHoveredDrawables.Except(hoveredDrawables))
             {
                 d.IsHovered = false;
-                d.TriggerEvent(new HoverLostEvent(state));
+                d.TriggerOnHoverLost(state);
             }
-
-            hoverEventsUpdated = true;
         }
 
         private bool isModifierKey(Key k)
@@ -385,12 +369,8 @@ namespace osu.Framework.Input
                                      || k == Key.LWin || k == Key.RWin;
         }
 
-        protected virtual void HandleKeyboardKeyStateChange(ButtonStateChangeEvent<Key> keyboardKeyStateChange)
+        public virtual void HandleKeyboardKeyStateChange(InputState state, Key key, ButtonStateChangeKind kind)
         {
-            var state = keyboardKeyStateChange.State;
-            var key = keyboardKeyStateChange.Button;
-            var kind = keyboardKeyStateChange.Kind;
-
             if (kind == ButtonStateChangeKind.Pressed)
             {
                 handleKeyDown(state, key, false);
@@ -410,12 +390,8 @@ namespace osu.Framework.Input
             }
         }
 
-        protected virtual void HandleJoystickButtonStateChange(ButtonStateChangeEvent<JoystickButton> joystickButtonStateChange)
+        public virtual void HandleJoystickButtonStateChange(InputState state, JoystickButton button, ButtonStateChangeKind kind)
         {
-            var state = joystickButtonStateChange.State;
-            var button = joystickButtonStateChange.Button;
-            var kind = joystickButtonStateChange.Kind;
-
             if (kind == ButtonStateChangeKind.Pressed)
             {
                 handleJoystickPress(state, button);
@@ -426,107 +402,143 @@ namespace osu.Framework.Input
             }
         }
 
-        public virtual void HandleInputStateChange(InputStateChangeEvent inputStateChange)
+        public virtual void HandleMousePositionChange(InputState state)
         {
-            // Set default
-            var mouse = inputStateChange.State.Mouse;
-            mouse.LastPosition = mouse.Position;
-            mouse.LastScroll = mouse.Scroll;
-
-            switch (inputStateChange)
-            {
-                case MousePositionChangeEvent mousePositionChange:
-                    HandleMousePositionChange(mousePositionChange);
-                    return;
-                case MouseScrollChangeEvent mouseScrollChange:
-                    HandleMouseScrollChange(mouseScrollChange);
-                    return;
-                case ButtonStateChangeEvent<MouseButton> mouseButtonStateChange:
-                    HandleMouseButtonStateChange(mouseButtonStateChange);
-                    return;
-                case ButtonStateChangeEvent<Key> keyboardKeyStateChange:
-                    HandleKeyboardKeyStateChange(keyboardKeyStateChange);
-                    return;
-                case ButtonStateChangeEvent<JoystickButton> joystickButtonStateChange:
-                    HandleJoystickButtonStateChange(joystickButtonStateChange);
-                    return;
-            }
-        }
-
-        protected virtual void HandleMousePositionChange(MousePositionChangeEvent e)
-        {
-            var state = e.State;
             var mouse = state.Mouse;
-
-            mouse.LastPosition = e.LastPosition;
 
             foreach (var h in InputHandlers)
                 if (h.Enabled && h is INeedsMousePositionFeedback handler)
                     handler.FeedbackMousePositionChange(mouse.Position);
 
-            handleMouseMove(state, e.LastPosition);
+            handleMouseMove(state);
 
             foreach (var manager in mouseButtonEventManagers.Values)
-                manager.HandlePositionChange(state, e.LastPosition);
-
-            updateHoverEvents(state);
+                manager.HandlePositionChange(state);
         }
 
-        protected virtual void HandleMouseScrollChange(MouseScrollChangeEvent e)
+        public virtual void HandleMouseScrollChange(InputState state)
         {
-            e.State.Mouse.LastScroll = e.LastScroll;
-
-            handleScroll(e.State);
+            handleScroll(state);
         }
 
-        protected virtual void HandleMouseButtonStateChange(ButtonStateChangeEvent<MouseButton> e)
+        public void HandleMouseButtonStateChange(InputState state, MouseButton button, ButtonStateChangeKind kind)
         {
-            if (mouseButtonEventManagers.TryGetValue(e.Button, out var manager))
-                manager.HandleButtonStateChange(e.State, e.Kind, Time.Current);
+            if (mouseButtonEventManagers.TryGetValue(button, out var manager))
+                manager.HandleButtonStateChange(state, kind, Time.Current);
         }
 
-        private bool handleMouseMove(InputState state, Vector2 lastPosition)
+        public virtual void HandleCustomInput(InputState state, IInput input)
         {
-            return PropagateBlockableEvent(PositionalInputQueue, new MouseMoveEvent(state, lastPosition));
+        }
+
+        private bool handleMouseMove(InputState state)
+        {
+            return PositionalInputQueue.Any(target => target.TriggerOnMouseMove(state));
         }
 
         private bool handleScroll(InputState state)
         {
-            return PropagateBlockableEvent(PositionalInputQueue, new ScrollEvent(state, state.Mouse.ScrollDelta));
+            return PropagateScroll(PositionalInputQueue, state);
+        }
+
+        /// <summary>
+        /// Triggers scroll events on drawables in <paramref cref="drawables"/> until it is handled.
+        /// </summary>
+        /// <param name="drawables">The drawables in the queue.</param>
+        /// <param name="state">The input state.</param>
+        /// <returns></returns>
+        protected virtual bool PropagateScroll(IEnumerable<Drawable> drawables, InputState state)
+        {
+            var handledBy = drawables.FirstOrDefault(target => target.TriggerOnScroll(state));
+
+            if (handledBy != null)
+                Logger.Log($"Scroll ({state.Mouse.ScrollDelta.X:#,2},{state.Mouse.ScrollDelta.Y:#,2}) handled by {handledBy}.", LoggingTarget.Runtime, LogLevel.Debug);
+
+            return handledBy != null;
         }
 
         private bool handleKeyDown(InputState state, Key key, bool repeat)
         {
-            return PropagateBlockableEvent(NonPositionalInputQueue, new KeyDownEvent(state, key, repeat));
+            return PropagateKeyDown(InputQueue, state, new KeyDownEventArgs { Key = key, Repeat = repeat });
+        }
+
+        /// <summary>
+        /// Triggers key down events on drawables in <paramref cref="drawables"/> until it is handled.
+        /// </summary>
+        /// <param name="drawables">The drawables in the queue.</param>
+        /// <param name="state">The input state.</param>
+        /// <param name="args">The args.</param>
+        /// <returns>Whether the key down event was handled.</returns>
+        protected virtual bool PropagateKeyDown(IEnumerable<Drawable> drawables, InputState state, KeyDownEventArgs args)
+        {
+            var handledBy = drawables.FirstOrDefault(target => target.TriggerOnKeyDown(state, args));
+
+            if (handledBy != null)
+                Logger.Log($"KeyDown ({args.Key}) handled by {handledBy}.", LoggingTarget.Runtime, LogLevel.Debug);
+
+            return handledBy != null;
         }
 
         private bool handleKeyUp(InputState state, Key key)
         {
-            return PropagateBlockableEvent(NonPositionalInputQueue, new KeyUpEvent(state, key));
+            IEnumerable<Drawable> queue = InputQueue;
+            if (!unfocusIfNoLongerValid())
+                queue = queue.Prepend(FocusedDrawable);
+
+            return PropagateKeyUp(queue, state, new KeyUpEventArgs { Key = key });
+        }
+
+        /// <summary>
+        /// Triggers key up events on drawables in <paramref cref="drawables"/> until it is handled.
+        /// </summary>
+        /// <param name="drawables">The drawables in the queue.</param>
+        /// <param name="state">The input state.</param>
+        /// <param name="args">The args.</param>
+        /// <returns>Whether the key up event was handled.</returns>
+        protected virtual bool PropagateKeyUp(IEnumerable<Drawable> drawables, InputState state, KeyUpEventArgs args)
+        {
+            var handledBy = drawables.FirstOrDefault(target => target.TriggerOnKeyUp(state, args));
+
+            if (handledBy != null)
+                Logger.Log($"KeyUp ({args.Key}) handled by {handledBy}.", LoggingTarget.Runtime, LogLevel.Debug);
+
+            return handledBy != null;
         }
 
         private bool handleJoystickPress(InputState state, JoystickButton button)
         {
-            return PropagateBlockableEvent(NonPositionalInputQueue, new JoystickPressEvent(state, button));
+            IEnumerable<Drawable> queue = InputQueue;
+            if (!unfocusIfNoLongerValid())
+                queue = queue.Prepend(FocusedDrawable);
+
+            return PropagateJoystickPress(queue, state, new JoystickEventArgs { Button = button });
+        }
+
+        protected virtual bool PropagateJoystickPress(IEnumerable<Drawable> drawables, InputState state, JoystickEventArgs args)
+        {
+            var handledBy = drawables.FirstOrDefault(target => target.TriggerOnJoystickPress(state, args));
+
+            if (handledBy != null)
+                Logger.Log($"JoystickPress ({args.Button}) handled by {handledBy}.", LoggingTarget.Runtime, LogLevel.Debug);
+
+            return handledBy != null;
         }
 
         private bool handleJoystickRelease(InputState state, JoystickButton button)
         {
-            return PropagateBlockableEvent(NonPositionalInputQueue, new JoystickReleaseEvent(state, button));
+            IEnumerable<Drawable> queue = InputQueue;
+            if (!unfocusIfNoLongerValid())
+                queue = queue.Prepend(FocusedDrawable);
+
+            return PropagateJoystickRelease(queue, state, new JoystickEventArgs { Button = button });
         }
 
-        /// <summary>
-        /// Triggers events on drawables in <paramref cref="drawables"/> until it is handled.
-        /// </summary>
-        /// <param name="drawables">The drawables in the queue.</param>
-        /// <param name="e">The event.</param>
-        /// <returns>Whether the event was handled.</returns>
-        protected virtual bool PropagateBlockableEvent(IEnumerable<Drawable> drawables, UIEvent e)
+        protected virtual bool PropagateJoystickRelease(IEnumerable<Drawable> drawables, InputState state, JoystickEventArgs args)
         {
-            var handledBy = drawables.FirstOrDefault(target => target.TriggerEvent(e));
+            var handledBy = drawables.FirstOrDefault(target => target.TriggerOnJoystickRelease(state, args));
 
             if (handledBy != null)
-                Logger.Log($"{e} handled by {handledBy}.", LoggingTarget.Runtime, LogLevel.Debug);
+                Logger.Log($"JoystickRelease ({args.Button}) handled by {handledBy}.", LoggingTarget.Runtime, LogLevel.Debug);
 
             return handledBy != null;
         }
@@ -603,7 +615,7 @@ namespace osu.Framework.Input
         private void focusTopMostRequestingDrawable()
         {
             // todo: don't rebuild input queue every frame
-            ChangeFocus(NonPositionalInputQueue.FirstOrDefault(target => target.RequestsFocus));
+            ChangeFocus(InputQueue.FirstOrDefault(target => target.RequestsFocus));
         }
 
         private class MouseLeftButtonEventManager : MouseButtonEventManager

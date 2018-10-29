@@ -13,6 +13,8 @@ namespace Symcol.Base.Graphics.UserInterface
 {
     public class SymcolWindow : SymcolContainer
     {
+        public override bool HandleMouseInput => true;
+
         /// <summary>
         /// Put all your stuff in this
         /// </summary>

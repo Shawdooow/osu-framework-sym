@@ -2,7 +2,6 @@
 // Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-framework/master/LICENCE
 
 using System.IO;
-using System.Threading.Tasks;
 
 namespace osu.Framework.IO.Stores
 {
@@ -49,17 +48,9 @@ namespace osu.Framework.IO.Stores
             TriggerOnChanged(e.FullPath.Replace(directory, string.Empty));
         }
 
-        public override async Task<byte[]> GetAsync(string name)
+        public override byte[] Get(string name)
         {
-            byte[] result;
-
-            using (FileStream stream = System.IO.File.OpenRead(Path.Combine(directory, name)))
-            {
-                result = new byte[stream.Length];
-                await stream.ReadAsync(result, 0, (int)stream.Length);
-            }
-
-            return result;
+            return System.IO.File.ReadAllBytes(Path.Combine(directory, name));
         }
     }
 }

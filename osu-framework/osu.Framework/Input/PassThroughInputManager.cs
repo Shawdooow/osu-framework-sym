@@ -44,13 +44,13 @@ namespace osu.Framework.Input
 
         private bool useParentInput = true;
 
-        internal override bool BuildNonPositionalInputQueue(List<Drawable> queue, bool allowBlocking = true)
+        internal override bool BuildKeyboardInputQueue(List<Drawable> queue, bool allowBlocking = true)
         {
-            if (!CanReceiveNonPositionalInput) return false;
+            if (!CanReceiveKeyboardInput) return false;
 
             if (!allowBlocking)
             {
-                base.BuildNonPositionalInputQueue(queue, false);
+                base.BuildKeyboardInputQueue(queue, false);
                 return false;
             }
 
@@ -59,9 +59,9 @@ namespace osu.Framework.Input
             return false;
         }
 
-        internal override bool BuildPositionalInputQueue(Vector2 screenSpacePos, List<Drawable> queue)
+        internal override bool BuildMouseInputQueue(Vector2 screenSpaceMousePos, List<Drawable> queue)
         {
-            if (!CanReceivePositionalInput) return false;
+            if (!CanReceiveMouseInput) return false;
 
             if (UseParentInput)
                 queue.Add(this);
@@ -153,7 +153,7 @@ namespace osu.Framework.Input
         {
             base.Update();
 
-            // Some non-positional events are blocked. Sync every frame.
+            // Some keyboard/joystick events are blocked. Sync every frame.
             if (UseParentInput) Sync(true);
         }
 

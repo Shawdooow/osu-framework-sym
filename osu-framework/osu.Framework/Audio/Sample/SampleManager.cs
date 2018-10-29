@@ -6,7 +6,6 @@ using System.IO;
 using osu.Framework.IO.Stores;
 using osu.Framework.Statistics;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace osu.Framework.Audio.Sample
 {
@@ -48,8 +47,6 @@ namespace osu.Framework.Audio.Sample
                 return channel;
             }
         }
-
-        public Task<SampleChannel> GetAsync(string name) => Task.Run(() => Get(name));
 
         public override void UpdateDevice(int deviceIndex)
         {

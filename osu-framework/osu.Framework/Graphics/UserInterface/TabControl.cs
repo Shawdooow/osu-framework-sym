@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Linq;
 using osu.Framework.Configuration;
 using osu.Framework.Extensions;
-using osu.Framework.Extensions.IEnumerableExtensions;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Input;
 using osu.Framework.Input.Bindings;
@@ -22,7 +21,7 @@ namespace osu.Framework.Graphics.UserInterface
     /// start of the list.
     /// </summary>
     /// <typeparam name="T">The type of item to be represented by tabs.</typeparam>
-    public abstract class TabControl<T> : CompositeDrawable, IHasCurrentValue<T>, IKeyBindingHandler<PlatformAction>
+    public abstract class TabControl<T> : Container, IHasCurrentValue<T>, IKeyBindingHandler<PlatformAction>
     {
         public Bindable<T> Current { get; } = new Bindable<T>();
 
@@ -84,7 +83,7 @@ namespace osu.Framework.Graphics.UserInterface
                 Dropdown.Origin = Anchor.TopRight;
                 Dropdown.Current.BindTo(Current);
 
-                AddInternal(Dropdown);
+                Add(Dropdown);
 
                 Trace.Assert(Dropdown.Header.Anchor.HasFlag(Anchor.x2), $@"The {nameof(Dropdown)} implementation should use a right-based anchor inside a TabControl.");
                 Trace.Assert(!Dropdown.Header.RelativeSizeAxes.HasFlag(Axes.X), $@"The {nameof(Dropdown)} implementation's header should have a specific size.");
@@ -95,7 +94,7 @@ namespace osu.Framework.Graphics.UserInterface
             else
                 tabMap = new Dictionary<T, TabItem<T>>();
 
-            AddInternal(TabContainer = CreateTabFlow());
+            Add(TabContainer = CreateTabFlow());
             TabContainer.TabVisibilityChanged = updateDropdown;
             TabContainer.ChildrenEnumerable = tabMap.Values;
 
@@ -162,11 +161,6 @@ namespace osu.Framework.Graphics.UserInterface
         /// </summary>
         /// <param name="item">The item to remove.</param>
         public void RemoveItem(T item) => removeTab(item);
-
-        /// <summary>
-        /// Removes all items from the control.
-        /// </summary>
-        public void Clear() => tabMap.Keys.ToArray().ForEach(item => removeTab(item));
 
         private TabItem<T> addTab(T value, bool addToDropdown = true)
         {

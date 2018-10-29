@@ -44,7 +44,7 @@ namespace Symcol.Worlds.Worlds
             {
                 using (Stream stream = Storage.GetStream(fileName + FileExtension, FileAccess.Read, FileMode.Open))
                 using (StreamReader r = new StreamReader(stream))
-                    return r.ReadToEnd();
+                    return r.ReadLine();
             }
             catch (Exception e)
             {
@@ -65,7 +65,7 @@ namespace Symcol.Worlds.Worlds
             {
                 using (Stream stream = Storage.GetStream(fileName + FileExtension, FileAccess.Write, FileMode.Create))
                 using (StreamWriter w = new StreamWriter(stream))
-                    w.Write(Serialize());
+                    w.WriteLine(Serialize());
             }
             catch (Exception e)
             {

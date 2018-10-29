@@ -15,11 +15,6 @@ namespace osu.Framework.Allocation
         private readonly ConcurrentDictionary<TKey, TimedObject<TValue>> dictionary = new ConcurrentDictionary<TKey, TimedObject<TValue>>();
 
         /// <summary>
-        /// Whether <see cref="IDisposable"/> items should be disposed on removal.
-        /// </summary>
-        public bool DisposeOnRemoval = true;
-
-        /// <summary>
         /// Time in milliseconds after last access after which items will be cleaned up.
         /// </summary>
         public int ExpiryTime = 5000;
@@ -36,7 +31,7 @@ namespace osu.Framework.Allocation
             timer = new Timer(checkExpiry, null, 0, CheckPeriod);
         }
 
-        public void Add(TKey key, TValue value)
+        internal void Add(TKey key, TValue value)
         {
             dictionary.TryAdd(key, new TimedObject<TValue>(value));
         }
@@ -48,10 +43,7 @@ namespace osu.Framework.Allocation
             foreach (var v in dictionary)
             {
                 if ((now - v.Value.LastAccessTime).TotalMilliseconds > ExpiryTime)
-                {
-                    if (dictionary.TryRemove(v.Key, out TimedObject<TValue> removed) && DisposeOnRemoval)
-                        (removed.Value as IDisposable)?.Dispose();
-                }
+                    dictionary.TryRemove(v.Key, out _);
             }
         }
 
@@ -59,7 +51,7 @@ namespace osu.Framework.Allocation
         {
             if (!dictionary.TryGetValue(key, out TimedObject<TValue> timed))
             {
-                value = default;
+                value = default(TValue);
                 return false;
             }
 

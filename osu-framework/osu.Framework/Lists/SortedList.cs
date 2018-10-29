@@ -10,7 +10,7 @@ using osu.Framework.IO.Serialization;
 
 namespace osu.Framework.Lists
 {
-    public class SortedList<T> : ICollection<T>, IReadOnlyList<T>, ISerializableSortedList
+    public class SortedList<T> : ICollection<T>, IReadOnlyList<T>, ISortedList
     {
         private readonly List<T> list;
 
@@ -131,48 +131,28 @@ namespace osu.Framework.Lists
 
         void ICollection<T>.Add(T item) => Add(item);
 
-        public Enumerator GetEnumerator() => new Enumerator(this);
+        public IEnumerator<T> GetEnumerator() => list.GetEnumerator();
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => list.GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        void ISerializableSortedList.SerializeTo(JsonWriter writer, JsonSerializer serializer)
+        public void SerializeTo(JsonWriter writer, JsonSerializer serializer)
         {
             serializer.Serialize(writer, list);
         }
 
-        void ISerializableSortedList.DeserializeFrom(JsonReader reader, JsonSerializer serializer)
+        public void DeserializeFrom(JsonReader reader, JsonSerializer serializer)
         {
             serializer.Populate(reader, list);
             list.Sort(Comparer);
         }
 
         #endregion
+    }
 
-        public struct Enumerator : IEnumerator<T>
-        {
-            private SortedList<T> list;
-            private int currentIndex;
-
-            internal Enumerator(SortedList<T> list)
-            {
-                this.list = list;
-                currentIndex = -1; // The first MoveNext() should bring the iterator to 0
-            }
-
-            public bool MoveNext() => ++currentIndex < list.Count;
-
-            public void Reset() => currentIndex = -1;
-
-            public T Current => list[currentIndex];
-
-            object IEnumerator.Current => Current;
-
-            public void Dispose()
-            {
-                list = null;
-            }
-        }
+    [JsonConverter(typeof(SortedListConverter))]
+    internal interface ISortedList
+    {
+        void SerializeTo(JsonWriter writer, JsonSerializer serializer);
+        void DeserializeFrom(JsonReader reader, JsonSerializer serializer);
     }
 }

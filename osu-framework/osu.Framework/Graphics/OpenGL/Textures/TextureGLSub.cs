@@ -6,7 +6,6 @@ using osu.Framework.Graphics.Primitives;
 using OpenTK;
 using osu.Framework.Graphics.Colour;
 using osu.Framework.Graphics.OpenGL.Vertices;
-using osu.Framework.Graphics.Textures;
 
 namespace osu.Framework.Graphics.OpenGL.Textures
 {
@@ -90,7 +89,7 @@ namespace osu.Framework.Graphics.OpenGL.Textures
             return parent.Bind();
         }
 
-        public override void SetData(ITextureUpload upload)
+        public override void SetData(TextureUpload upload)
         {
             if (upload.Bounds.Width > bounds.Width || upload.Bounds.Height > bounds.Height)
                 throw new ArgumentOutOfRangeException(
@@ -101,12 +100,8 @@ namespace osu.Framework.Graphics.OpenGL.Textures
                 upload.Bounds = bounds;
             else
             {
-                var adjustedBounds = upload.Bounds;
-
-                adjustedBounds.X += bounds.X;
-                adjustedBounds.Y += bounds.Y;
-
-                upload.Bounds = adjustedBounds;
+                upload.Bounds.X += bounds.X;
+                upload.Bounds.Y += bounds.Y;
             }
 
             parent?.SetData(upload);

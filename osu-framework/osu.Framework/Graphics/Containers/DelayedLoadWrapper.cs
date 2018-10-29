@@ -5,7 +5,6 @@ using System;
 using System.Threading.Tasks;
 using osu.Framework.Caching;
 using osu.Framework.Graphics.Primitives;
-using osu.Framework.Threading;
 
 namespace osu.Framework.Graphics.Containers
 {
@@ -35,7 +34,7 @@ namespace osu.Framework.Graphics.Containers
 
         public override double LifetimeEnd => Content.LifetimeEnd;
 
-        public virtual Drawable Content { get; protected set; }
+        internal readonly Drawable Content;
 
         /// <summary>
         /// The amount of time on-screen in milliseconds before we begin a load of children.
@@ -50,57 +49,39 @@ namespace osu.Framework.Graphics.Containers
 
         protected override void Update()
         {
+            // This code can be expensive, so only run if we haven't yet loaded.
+            if (!LoadTriggered)
+            {
+                if (!isIntersecting)
+                    timeVisible = 0;
+                else
+                    timeVisible += Time.Elapsed;
+            }
+
             base.Update();
 
-            // This code can be expensive, so only run if we haven't yet loaded.
-            if (DelayedLoadCompleted || DelayedLoadTriggered) return;
-
-            if (!IsIntersecting)
-                timeVisible = 0;
-            else
-                timeVisible += Time.Elapsed;
-
-            if (ShouldLoadContent)
-                BeginDelayedLoad();
-        }
-
-        protected void BeginDelayedLoad()
-        {
-            if (loadTask != null) throw new InvalidOperationException("Load is already started!");
-            loadTask = LoadComponentAsync(Content, EndDelayedLoad);
-        }
-
-        protected virtual void EndDelayedLoad(Drawable content)
-        {
-            timeVisible = 0;
-            loadTask = null;
-            AddInternal(content);
+            if (!LoadTriggered && ShouldLoadContent)
+                loadTask = LoadComponentAsync(Content, AddInternal);
         }
 
         /// <summary>
         /// True if the load task for our content has been started.
         /// Will remain true even after load is completed.
         /// </summary>
-        protected bool DelayedLoadTriggered => loadTask != null;
-
-        public bool DelayedLoadCompleted => InternalChildren.Count > 0;
+        protected bool LoadTriggered => loadTask != null;
 
         private Cached<bool> isIntersectingBacking;
 
-        protected bool IsIntersecting => isIntersectingBacking.IsValid ? isIntersectingBacking : isIntersectingBacking.Value = checkScrollIntersection();
-
-        internal IOnScreenOptimisingContainer OptimisingContainer { get; private set; }
+        private bool isIntersecting => isIntersectingBacking.IsValid ? isIntersectingBacking : (isIntersectingBacking.Value = checkScrollIntersection());
 
         private bool checkScrollIntersection()
         {
-            if (OptimisingContainer == null)
-            {
-                CompositeDrawable cursor = this;
-                while (OptimisingContainer == null && (cursor = cursor.Parent) != null)
-                    OptimisingContainer = cursor as IOnScreenOptimisingContainer;
-            }
+            IOnScreenOptimisingContainer scroll = null;
+            CompositeDrawable cursor = this;
+            while (scroll == null && (cursor = cursor.Parent) != null)
+                scroll = cursor as IOnScreenOptimisingContainer;
 
-            return OptimisingContainer?.ScreenSpaceDrawQuad.Intersects(ScreenSpaceDrawQuad) ?? true;
+            return scroll?.ScreenSpaceDrawQuad.Intersects(ScreenSpaceDrawQuad) ?? true;
         }
 
         public override bool Invalidate(Invalidation invalidation = Invalidation.All, Drawable source = null, bool shallPropagate = true)
@@ -112,17 +93,9 @@ namespace osu.Framework.Graphics.Containers
         /// <summary>
         /// A container which acts as a masking parent for on-screen delayed load optimisations.
         /// </summary>
-        internal interface IOnScreenOptimisingContainer
+        public interface IOnScreenOptimisingContainer
         {
             Quad ScreenSpaceDrawQuad { get; }
-
-            /// <summary>
-            /// Schedule a repeating action from a child to perform checks even when the child is potentially masked.
-            /// Repeats every frame until manually cancelled.
-            /// </summary>
-            /// <param name="action">The action to perform.</param>
-            /// <returns>The scheduled delegate.</returns>
-            ScheduledDelegate ScheduleCheckAction(Action action);
         }
     }
 }

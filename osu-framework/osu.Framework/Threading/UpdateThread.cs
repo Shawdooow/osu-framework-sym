@@ -21,8 +21,8 @@ namespace osu.Framework.Threading
             StatisticsCounterType.DrawNodeCtor,
             StatisticsCounterType.DrawNodeAppl,
             StatisticsCounterType.ScheduleInvk,
-            StatisticsCounterType.InputQueue,
-            StatisticsCounterType.PositionalIQ
+            StatisticsCounterType.KeyboardQueue,
+            StatisticsCounterType.MouseQueue
         };
     }
 }
