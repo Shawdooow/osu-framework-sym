@@ -10,17 +10,30 @@ namespace Symcol.Networking.NetworkingHandlers.Server
     {
         #region Fields
 
+        //30 Seconds by default
+        protected virtual double TimeOutTime => 60000;
+
         /// <summary>
         /// All Connecting clients / clients losing connection
         /// </summary>
         public readonly List<Client> Clients = new List<Client>();
 
+        protected virtual Client CreateConnectingClient(ConnectPacket connectPacket)
+        {
+            Client c = new Client
+            {
+                EndPoint = new IPEndPoint(IPAddress.Parse(NetworkingClient.EndPoint.Address.ToString()), NetworkingClient.EndPoint.Port),
+                LastConnectionTime = Time.Current,
+                Statues = ConnectionStatues.Connecting
+            };
+            c.OnDisconnected += () => Clients.Remove(c);
+
+            return c;
+        }
+
         #endregion
 
-        public ServerNetworkingHandler()
-        {
-            OnAddressChange += (ip, port) => { NetworkingClient = new UdpNetworkingClient(port); };
-        }
+        public ServerNetworkingHandler() => OnAddressChange += (ip, port) => { NetworkingClient = new UdpNetworkingClient(port); };
 
         #region Update Loop
 
@@ -34,28 +47,32 @@ namespace Symcol.Networking.NetworkingHandlers.Server
         /// <summary>
         /// Handle any packets we got before sending them to OnPackerReceive
         /// </summary>
-        /// <param name="packet"></param>
-        protected override void HandlePackets(Packet packet)
+        /// <param name="info"></param>
+        protected override void HandlePackets(PacketInfo info)
         {
-            base.HandlePackets(packet);
+            base.HandlePackets(info);
 
-            switch (packet)
+            ServerPacketInfo serverInfo = (ServerPacketInfo)info;
+
+            switch (info.Packet)
             {
                 case ConnectPacket connectPacket:
-                    Clients.Add(GenerateConnectingClient());
-                    SendToClient(new ConnectedPacket(), connectPacket);
+                    serverInfo.Client = CreateConnectingClient(connectPacket);
+                    Clients.Add(serverInfo.Client);
+                    ReturnToClient(new ConnectedPacket());
                     break;
                 case DisconnectPacket disconnectPacket:
-                    ClientDisconnecting(disconnectPacket);
+                    ClientDisconnecting(serverInfo);
                     break;
                 case TestPacket testPacket:
-                    Client client = GetClient(testPacket);
-                    if (client != null)
+                    if (serverInfo.Client != null)
                     {
-                        client.LastConnectionTime = Time.Current;
-                        client.ConnectionTryCount = 0;
-                        client.Statues = ConnectionStatues.Connected;
+                        serverInfo.Client.LastConnectionTime = Time.Current;
+                        serverInfo.Client.ConnectionTryCount = 0;
+                        serverInfo.Client.Statues = ConnectionStatues.Connected;
+                        break;
                     }
+                    Logger.Log("Recieved a test packet from a client we have never seen!", LoggingTarget.Network, LogLevel.Error);
                     break;
             }
         }
@@ -75,8 +92,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
 
                 if (client.LastConnectionTime + TimeOutTime <= Time.Current)
                 {
-                    Clients.Remove(client);
-                    Logger.Log("Connection to a connected client lost! - " + client.EndPoint, LoggingTarget.Network, LogLevel.Error);
+                    client.Statues = ConnectionStatues.Disconnected;
                     break;
                 }
             }
@@ -86,6 +102,33 @@ namespace Symcol.Networking.NetworkingHandlers.Server
 
         #region Packet and Client Helper Functions
 
+        protected override List<PacketInfo> ReceivePackets()
+        {
+            List<PacketInfo> packets = new List<PacketInfo>();
+            for (int i = 0; i < NetworkingClient?.Available; i++)
+            {
+                packets.Add(new ServerPacketInfo
+                {
+                    Packet = NetworkingClient.GetPacket(),
+                    Client = GetLastClient(),
+                });
+            }
+
+            return packets;
+        }
+
+        /// <summary>
+        /// Get a matching client from currently connecting/connected clients
+        /// </summary>
+        /// <returns></returns>
+        protected Client GetLastClient()
+        {
+            foreach (Client client in Clients)
+                if (client.EndPoint.ToString() == NetworkingClient.EndPoint.ToString())
+                    return client;
+            return null;
+        }
+
         protected override Packet SignPacket(Packet packet)
         { 
             if (packet is ConnectPacket c)
@@ -94,50 +137,14 @@ namespace Symcol.Networking.NetworkingHandlers.Server
         }
 
         /// <summary>
-        /// Get a matching client from currently connecting/connected clients
-        /// </summary>
-        /// <param name="packet"></param>
-        /// <returns></returns>
-        protected Client GetClient(Packet packet)
-        {
-            foreach (Client client in Clients)
-                if (client.EndPoint.ToString() == NetworkingClient.EndPoint.ToString())
-                    return client;
-
-            return null;
-        }
-
-        /// <summary>
-        /// Takes a ConnectPacket and creates a ClientInfo for the connecting client
-        /// </summary>
-        /// <returns></returns>
-        public Client GenerateConnectingClient()
-        {
-            Client c = new Client
-            {
-                EndPoint = new IPEndPoint(IPAddress.Parse(NetworkingClient.EndPoint.Address.ToString()), NetworkingClient.EndPoint.Port),
-                LastConnectionTime = Time.Current,
-                Statues = ConnectionStatues.Connecting
-            };
-            c.OnDisconnected += () => Clients.Remove(c);
-
-            return c;
-        }
-
-        /// <summary>
         /// Called to remove a client that is disconnecting
         /// </summary>
-        /// <param name="packet"></param>
-        protected void ClientDisconnecting(DisconnectPacket packet)
-        {
-            Client client = GetClient(packet);
-            if (client != null)
-                client.Statues = ConnectionStatues.Disconnected;
-        }
+        /// <param name="info"></param>
+        protected void ClientDisconnecting(ServerPacketInfo info) => info.Client.Statues = ConnectionStatues.Disconnected;
 
         protected virtual bool HandlePacket(Packet packet)
         {
-            if (GetClient(packet) != null)
+            if (GetLastClient() != null)
                 return true;
 
             if (packet is ConnectPacket c && c.Gamekey == Gamekey)
@@ -171,10 +178,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
                     NetworkingClient.SendPacket(SignPacket(packet), client.EndPoint);
         }
 
-        protected void SendToClient(Packet packet, Packet recievedPacket)
-        {
-            NetworkingClient.SendPacket(SignPacket(packet), GetClient(recievedPacket).EndPoint);
-        }
+        protected void ReturnToClient(Packet packet) => NetworkingClient.SendPacket(SignPacket(packet), GetLastClient().EndPoint);
 
         /// <summary>
         /// Test a clients connection
@@ -191,7 +195,8 @@ namespace Symcol.Networking.NetworkingHandlers.Server
 
         public virtual void Close()
         {
-
+            if (NetworkingClient is UdpNetworkingClient udp)
+                udp.UdpClient.Close();
         }
 
         #endregion
@@ -199,6 +204,7 @@ namespace Symcol.Networking.NetworkingHandlers.Server
         protected override void Dispose(bool isDisposing)
         {
             ShareWithAllClients(new ServerClosingPacket());
+            Close();
             base.Dispose(isDisposing);
         }
     }

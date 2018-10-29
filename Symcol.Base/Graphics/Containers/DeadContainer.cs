@@ -12,7 +12,7 @@ namespace Symcol.Base.Graphics.Containers
     public class DeadContainer<T> : SymcolContainer<T>
         where T : Drawable
     {
-        public override bool HandleMouseInput => false;
-        public override bool HandleKeyboardInput => false;
+        public override bool HandleNonPositionalInput => false;
+        public override bool HandlePositionalInput => false;
     }
 }

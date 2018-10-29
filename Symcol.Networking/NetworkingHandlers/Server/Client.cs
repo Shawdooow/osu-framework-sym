@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Net;
+using osu.Framework.Logging;
+
 // ReSharper disable InconsistentNaming
 
 namespace Symcol.Networking.NetworkingHandlers.Server
@@ -27,12 +29,15 @@ namespace Symcol.Networking.NetworkingHandlers.Server
                     {
                         case ConnectionStatues.Connecting:
                             OnConnecting?.Invoke();
+                            Logger.Log($"Client {EndPoint.Address} is connecting!", LoggingTarget.Network);
                             break;
                         case ConnectionStatues.Connected:
                             OnConnected?.Invoke();
+                            Logger.Log($"Client {EndPoint.Address} has connected!", LoggingTarget.Network);
                             break;
                         case ConnectionStatues.Disconnected:
                             OnDisconnected?.Invoke();
+                            Logger.Log($"Client {EndPoint.Address} has lost connection!", LoggingTarget.Network);
                             break;
                     }
                 }

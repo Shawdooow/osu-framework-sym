@@ -61,7 +61,7 @@ namespace Symcol.Networking.NetworkingClients
 
                 stream.Position = 0;
 
-                int i = packet.PacketSize;
+                uint i = packet.PacketSize;
                 retry:
                 byte[] data = new byte[i];
 
@@ -72,7 +72,7 @@ namespace Symcol.Networking.NetworkingClients
                 catch
                 {
                     i *= 2;
-                    Logger.Log("Warning: Packet being sent is larger than its predefined size of (" + packet.PacketSize + "  bytes) and is being resized to (" + i + " bytes)", LoggingTarget.Network, LogLevel.Error);
+                    Logger.Log($"Warning: Packet being sent is larger than its predefined size of ({packet.PacketSize} bytes) and is being resized to ({i} bytes)", LoggingTarget.Network);
                     goto retry;
                 }
 

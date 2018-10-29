@@ -53,11 +53,6 @@ namespace Symcol.Networking.NetworkingClients
                 Logger.Log($"UdpClient is not connected to {UdpClient.Client.RemoteEndPoint}!", LoggingTarget.Network, LogLevel.Error);
                 return;
             }
-            if (end == null && !UdpClient.Active)
-            {
-                Logger.Log($"UdpClient connection is not active to {UdpClient.Client.RemoteEndPoint}!", LoggingTarget.Network, LogLevel.Error);
-                return;
-            }
 
             try
             {
@@ -75,45 +70,12 @@ namespace Symcol.Networking.NetworkingClients
             catch (Exception e) { Logger.Error(e, "Error sending bytes!"); }                
         }
 
-        public override byte[] GetBytes()
-        {
-            return Available > 0 ? UdpClient.Receive(ref EndPoint) : null;
-        }
+        public override byte[] GetBytes() => Available > 0 ? UdpClient.Receive(ref EndPoint) : null;
 
         public override void Dispose()
         {
             UdpClient?.Close();
             UdpClient?.Dispose();
-        }
-    }
-
-    public class UdpClient : System.Net.Sockets.UdpClient
-    {
-        public new bool Active => base.Active;
-
-        public UdpClient()
-        {
-        }
-
-        public UdpClient(int port) : base(port)
-        {
-        }
-
-        // ReSharper disable once InconsistentNaming
-        public UdpClient(IPEndPoint localEP) : base(localEP)
-        {
-        }
-
-        public UdpClient(AddressFamily family) : base(family)
-        {
-        }
-
-        public UdpClient(int port, AddressFamily family) : base(port, family)
-        {
-        }
-
-        public UdpClient(string hostname, int port) : base(hostname, port)
-        {
         }
     }
 }
