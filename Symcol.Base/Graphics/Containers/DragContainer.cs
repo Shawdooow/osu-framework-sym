@@ -13,12 +13,8 @@ namespace Symcol.Base.Graphics.Containers
         private bool leftDown;
         private bool rightDown;
 
-        private Vector2 startPosition;
-
         protected override bool OnMouseDown(MouseDownEvent e)
         {
-            startPosition = Position;
-
             if (e.Button == MouseButton.Left && AllowLeftClickDrag)
                 return leftDown = true;
 
@@ -31,7 +27,7 @@ namespace Symcol.Base.Graphics.Containers
         protected override bool OnDrag(DragEvent e)
         {
             if (leftDown || rightDown)
-                Position = startPosition + e.Delta;
+                Position += e.Delta;
 
             return base.OnDrag(e);
         }
