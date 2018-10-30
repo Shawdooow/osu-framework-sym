@@ -13,6 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\osu-framework\osu.Framework\osu.Framework.csproj" />
+    <ProjectReference Include="..\Symcol.Base\Symcol.Base.csproj" />
     <ProjectReference Include="..\Symcol.Resources\Symcol.Resources.csproj" />
   </ItemGroup>
 </Project>
