@@ -8,6 +8,7 @@
     <Description>world stuff stolen from eden</Description>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Symcol.Base\Symcol.Base.csproj" />
     <ProjectReference Include="..\Symcol.IO\Symcol.IO.csproj" />
   </ItemGroup>
   <ItemGroup>

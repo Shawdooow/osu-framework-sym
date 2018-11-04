@@ -7,7 +7,7 @@ using osu.Framework.Graphics.Lines;
 using osu.Framework.Graphics.Sprites;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.Input;
-using osu.Framework.Input.States;
+using osu.Framework.Input.Events;
 using osu.Framework.Testing;
 using OpenTK;
 using OpenTK.Graphics;
@@ -120,7 +120,7 @@ namespace osu.Framework.Tests.Visual
             Colour = Color4.White,
         };
 
-        private class SmoothedPath : Path
+        private class SmoothedPath : TexturedPath
         {
             protected SmoothedPath()
             {
@@ -185,18 +185,18 @@ namespace osu.Framework.Tests.Visual
 
             protected virtual void AddUserVertex(Vector2 v) => AddRawVertex(v);
 
-            protected override bool OnDragStart(InputState state)
+            protected override bool OnDragStart(DragStartEvent e)
             {
-                AddUserVertex(state.Mouse.Position);
+                AddUserVertex(e.MousePosition);
                 DrawText.Text = "Custom Smoothed Drawn: Smoothed=" + NumVertices + ", Raw=" + NumRaw;
                 return true;
             }
 
-            protected override bool OnDrag(InputState state)
+            protected override bool OnDrag(DragEvent e)
             {
-                AddUserVertex(state.Mouse.Position);
+                AddUserVertex(e.MousePosition);
                 DrawText.Text = "Custom Smoothed Drawn: Smoothed=" + NumVertices + ", Raw=" + NumRaw;
-                return base.OnDrag(state);
+                return base.OnDrag(e);
             }
         }
 
