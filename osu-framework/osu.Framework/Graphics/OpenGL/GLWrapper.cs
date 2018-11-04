@@ -22,7 +22,7 @@ using osu.Framework.Platform;
 
 namespace osu.Framework.Graphics.OpenGL
 {
-    public static class GLWrapper
+    internal static class GLWrapper
     {
         public static MaskingInfo CurrentMaskingInfo { get; private set; }
         public static RectangleI Viewport { get; private set; }
