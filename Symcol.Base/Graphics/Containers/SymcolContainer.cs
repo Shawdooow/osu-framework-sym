@@ -9,20 +9,7 @@ namespace Symcol.Base.Graphics.Containers
         {
             Clear();
             ClearTransforms();
-            Dispose();
-        }
-
-        public override bool UpdateSubTree()
-        {
-            if (IsDisposed) return false;
-            try
-            {
-                return base.UpdateSubTree();
-            }
-            catch
-            {
-                return false;
-            }
+            Expire();
         }
     }
 
@@ -33,20 +20,7 @@ namespace Symcol.Base.Graphics.Containers
         {
             Clear();
             ClearTransforms();
-            Dispose();
-        }
-
-        public override bool UpdateSubTree()
-        {
-            if (IsDisposed) return false;
-            try
-            {
-                return base.UpdateSubTree();
-            }
-            catch
-            {
-                return false;
-            }
+            Expire();
         }
     }
 }
