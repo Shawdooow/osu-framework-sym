@@ -10,7 +10,20 @@ namespace Symcol.Base.Graphics.Sprites
         public virtual void Delete()
         {
             ClearTransforms();
-            Expire();
+            Dispose();
+        }
+
+        public override bool UpdateSubTree()
+        {
+            if (IsDisposed) return false;
+            try
+            {
+                return base.UpdateSubTree();
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
