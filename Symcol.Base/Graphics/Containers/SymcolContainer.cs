@@ -7,9 +7,22 @@ namespace Symcol.Base.Graphics.Containers
     {
         public virtual void Delete()
         {
+            Clear();
             ClearTransforms();
-            ClearInternal();
-            Expire();
+            Dispose();
+        }
+
+        public override bool UpdateSubTree()
+        {
+            if (IsDisposed) return false;
+            try
+            {
+                return base.UpdateSubTree();
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 
@@ -18,9 +31,22 @@ namespace Symcol.Base.Graphics.Containers
     {
         public virtual void Delete()
         {
+            Clear();
             ClearTransforms();
-            ClearInternal();
-            Expire();
+            Dispose();
+        }
+
+        public override bool UpdateSubTree()
+        {
+            if (IsDisposed) return false;
+            try
+            {
+                return base.UpdateSubTree();
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
