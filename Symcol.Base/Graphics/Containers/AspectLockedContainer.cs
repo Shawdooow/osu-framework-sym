@@ -12,7 +12,7 @@ namespace Symcol.Base.Graphics.Containers
     {
         public new float Margin = 1;
 
-        protected virtual Vector2 AspectRatio => Vector2.One;
+        public virtual Vector2 AspectRatio { get; set; } = Vector2.One;
 
         public AspectLockedContainer()
         {
