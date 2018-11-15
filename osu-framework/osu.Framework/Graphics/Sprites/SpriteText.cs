@@ -475,14 +475,18 @@ namespace osu.Framework.Graphics.Sprites
 
             screenSpaceCharactersBacking.Clear();
 
-            foreach (var character in characters)
+            try
             {
-                screenSpaceCharactersBacking.Add(new ScreenSpaceCharacterPart
+                foreach (var character in characters)
                 {
-                    DrawQuad = ToScreenSpace(character.DrawRectangle),
-                    Texture = character.Texture
-                });
+                    screenSpaceCharactersBacking.Add(new ScreenSpaceCharacterPart
+                    {
+                        DrawQuad = ToScreenSpace(character.DrawRectangle),
+                        Texture = character.Texture
+                    });
+                }
             }
+            catch { }
 
             screenSpaceCharactersCache.Validate();
         }
