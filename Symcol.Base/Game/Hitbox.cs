@@ -69,7 +69,9 @@ namespace Symcol.Base.Game
                 if (hitbox1.Shape == Shape.Circle && hitbox2.Shape == Shape.Circle)
                 {
                     Vector2 pos = hitbox2.ToSpaceOfOtherDrawable(Vector2.Zero, hitbox1);
-                    pos += new Vector2(hitbox1.Width / 8 + hitbox2.Width / 8);
+                    //Oddly this seems to help but not always
+                    pos += new Vector2(hitbox1.Width / 4 + hitbox2.Width / 4);
+
                     double distance = Math.Sqrt(Math.Pow(pos.X, 2) + Math.Pow(pos.Y, 2));
                     double edgeDistance = distance - (hitbox1.Width / 2 + hitbox2.Width / 2);
 
