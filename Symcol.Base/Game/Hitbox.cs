@@ -11,11 +11,6 @@ namespace Symcol.Base.Game
         /// <summary>
         /// whether we want to do hit detection
         /// </summary>
-        public int Team { get; set; }
-
-        /// <summary>
-        /// whether we want to do hit detection
-        /// </summary>
         public bool HitDetection { get; set; } = true;
 
         /// <summary>
@@ -64,7 +59,7 @@ namespace Symcol.Base.Game
             if (hitbox2 == null)
                 hitbox2 = this;
 
-            if (hitbox1.HitDetection && hitbox2.HitDetection && hitbox1.Team != hitbox2.Team)
+            if (hitbox1.HitDetection && hitbox2.HitDetection)
             {
                 if (hitbox1.Shape == Shape.Circle && hitbox2.Shape == Shape.Circle)
                 {
