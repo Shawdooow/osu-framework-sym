@@ -7,8 +7,8 @@ namespace Symcol.Base.Graphics.Containers
     {
         public virtual void Delete()
         {
+            Clear();
             ClearTransforms();
-            ClearInternal();
             Expire();
         }
     }
@@ -18,8 +18,8 @@ namespace Symcol.Base.Graphics.Containers
     {
         public virtual void Delete()
         {
+            Clear();
             ClearTransforms();
-            ClearInternal();
             Expire();
         }
     }
