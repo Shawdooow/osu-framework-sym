@@ -14,8 +14,8 @@ using osu.Framework.Graphics.Shapes;
 using osu.Framework.Graphics.Sprites;
 using osu.Framework.Logging;
 using osu.Framework.Testing;
-using OpenTK;
-using OpenTK.Graphics;
+using osuTK;
+using osuTK.Graphics;
 
 namespace osu.Framework.Tests.Visual
 {
@@ -24,11 +24,11 @@ namespace osu.Framework.Tests.Visual
         private readonly List<SlowLoader> loaders = new List<SlowLoader>();
 
         [SetUp]
-        public void SetUp()
+        public void SetUp() => Schedule(() =>
         {
             loaders.Clear();
             Child = createLoader();
-        }
+        });
 
         [Test]
         public void TestConcurrentLoad()
