@@ -1,5 +1,5 @@
 ﻿using osu.Framework.Graphics;
-using OpenTK;
+using osuTK;
 
 namespace Symcol.Base.Graphics.Containers
 {

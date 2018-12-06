@@ -1,6 +1,6 @@
 ﻿using osu.Framework.Graphics;
 using osu.Framework.MathUtils;
-using OpenTK;
+using osuTK;
 
 namespace Symcol.Base.Graphics.Containers
 {
