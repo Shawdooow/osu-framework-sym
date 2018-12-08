@@ -12,6 +12,7 @@ using osu.Framework.Graphics.Shaders;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.IO.Stores;
 using osu.Framework.Localisation;
+using osu.Framework.Logging;
 using osu.Framework.MathUtils;
 using osuTK;
 using osuTK.Graphics;
@@ -475,14 +476,18 @@ namespace osu.Framework.Graphics.Sprites
 
             screenSpaceCharactersBacking.Clear();
 
-            foreach (var character in characters)
+            try
             {
-                screenSpaceCharactersBacking.Add(new ScreenSpaceCharacterPart
+                foreach (var character in characters)
                 {
-                    DrawQuad = ToScreenSpace(character.DrawRectangle),
-                    Texture = character.Texture
-                });
+                    screenSpaceCharactersBacking.Add(new ScreenSpaceCharacterPart
+                    {
+                        DrawQuad = ToScreenSpace(character.DrawRectangle),
+                        Texture = character.Texture
+                    });
+                }
             }
+            catch (Exception e) { Logger.Error(e, "Failed to update SpriteText!"); }
 
             screenSpaceCharactersCache.Validate();
         }
