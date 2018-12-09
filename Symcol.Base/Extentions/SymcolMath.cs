@@ -1,6 +1,9 @@
 ﻿namespace Symcol.Base.Extentions
 {
-    public static class BetterMath
+    /// <summary>
+    /// Additional Math functions
+    /// </summary>
+    public static class SymcolMath
     {
         /// <summary>
         /// Scales the given value between the inputMin and inputMax to between outputMin and outputMax
