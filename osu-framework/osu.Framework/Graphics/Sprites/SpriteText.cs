@@ -6,13 +6,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using osu.Framework.Allocation;
 using osu.Framework.Caching;
+using osu.Framework.Configuration;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Primitives;
 using osu.Framework.Graphics.Shaders;
 using osu.Framework.Graphics.Textures;
+using osu.Framework.Graphics.UserInterface;
 using osu.Framework.IO.Stores;
 using osu.Framework.Localisation;
-using osu.Framework.Logging;
 using osu.Framework.MathUtils;
 using osuTK;
 using osuTK.Graphics;
@@ -22,7 +23,7 @@ namespace osu.Framework.Graphics.Sprites
     /// <summary>
     /// A container for simple text rendering purposes. If more complex text rendering is required, use <see cref="TextFlowContainer"/> instead.
     /// </summary>
-    public partial class SpriteText : Drawable, IHasLineBaseHeight, IHasText, IHasFilterTerms, IFillFlowContainer
+    public partial class SpriteText : Drawable, IHasLineBaseHeight, IHasText, IHasFilterTerms, IFillFlowContainer, IHasCurrentValue<string>
     {
         private const float default_text_size = 20;
         private static readonly Vector2 shadow_offset = new Vector2(0, 0.06f);
@@ -36,6 +37,11 @@ namespace osu.Framework.Graphics.Sprites
         private ILocalisedBindableString localisedText;
 
         private float spaceWidth;
+
+        public SpriteText()
+        {
+            current.BindValueChanged(v => Text = v);
+        }
 
         [BackgroundDependencyLoader]
         private void load(ShaderManager shaders)
@@ -78,8 +84,25 @@ namespace osu.Framework.Graphics.Sprites
                     return;
                 text = value;
 
+                current.Value = text;
+
                 if (localisedText != null)
                     localisedText.Text = value;
+            }
+        }
+
+        private readonly Bindable<string> current = new Bindable<string>();
+
+        public Bindable<string> Current
+        {
+            get => current;
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                current.UnbindBindings();
+                current.BindTo(value);
             }
         }
 
@@ -476,18 +499,14 @@ namespace osu.Framework.Graphics.Sprites
 
             screenSpaceCharactersBacking.Clear();
 
-            try
+            foreach (var character in characters)
             {
-                foreach (var character in characters)
+                screenSpaceCharactersBacking.Add(new ScreenSpaceCharacterPart
                 {
-                    screenSpaceCharactersBacking.Add(new ScreenSpaceCharacterPart
-                    {
-                        DrawQuad = ToScreenSpace(character.DrawRectangle),
-                        Texture = character.Texture
-                    });
-                }
+                    DrawQuad = ToScreenSpace(character.DrawRectangle),
+                    Texture = character.Texture
+                });
             }
-            catch (Exception e) { Logger.Error(e, "Failed to update SpriteText!"); }
 
             screenSpaceCharactersCache.Validate();
         }
