@@ -12,9 +12,10 @@ using osu.Framework.Graphics.Shaders;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.IO.Stores;
 using osu.Framework.Localisation;
+using osu.Framework.Logging;
 using osu.Framework.MathUtils;
-using OpenTK;
-using OpenTK.Graphics;
+using osuTK;
+using osuTK.Graphics;
 
 namespace osu.Framework.Graphics.Sprites
 {
@@ -486,7 +487,7 @@ namespace osu.Framework.Graphics.Sprites
                     });
                 }
             }
-            catch { }
+            catch (Exception e) { Logger.Error(e, "Failed to update SpriteText!"); }
 
             screenSpaceCharactersCache.Validate();
         }

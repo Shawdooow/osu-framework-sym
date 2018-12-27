@@ -1,7 +1,7 @@
 ﻿using System;
 using osu.Framework.Graphics;
 using osu.Framework.Input.Events;
-using OpenTK;
+using osuTK;
 
 namespace Symcol.Base.Graphics.Containers
 {

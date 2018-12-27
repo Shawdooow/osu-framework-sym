@@ -1,7 +1,7 @@
 ﻿using System;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
-using OpenTK;
+using osuTK;
 using Symcol.Base.Graphics.Containers;
 
 namespace Symcol.Base.Game

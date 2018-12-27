@@ -2,7 +2,7 @@
 // Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-framework/master/LICENCE
 
 using System.Linq;
-using OpenTK;
+using osuTK;
 using osu.Framework.Allocation;
 using osu.Framework.Audio;
 using osu.Framework.Configuration;
@@ -129,6 +129,9 @@ namespace osu.Framework
             dependencies.Cache(Shaders);
 
             Fonts = new FontStore(new GlyphStore(Resources, @"Fonts/OpenSans"));
+            Fonts.AddStore(new GlyphStore(Resources, @"Fonts/OpenSans-Bold"));
+            Fonts.AddStore(new GlyphStore(Resources, @"Fonts/OpenSans-Italic"));
+            Fonts.AddStore(new GlyphStore(Resources, @"Fonts/OpenSans-BoldItalic"));
             dependencies.Cache(Fonts);
 
             Localisation = new LocalisationManager(config);
