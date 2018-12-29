@@ -80,6 +80,11 @@ namespace Symcol.Networking.NetworkingHandlers.Peer
 
         public virtual void SendToServer(Packet packet)
         {
+            if (NetworkingClient == null)
+            {
+                Logger.Log("NetworkingClient is null", LoggingTarget.Network, LogLevel.Error);
+                return;
+            }
             NetworkingClient.SendPacket(SignPacket(packet));
         }
 
