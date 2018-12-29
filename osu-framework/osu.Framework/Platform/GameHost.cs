@@ -73,11 +73,6 @@ namespace osu.Framework.Platform
         public event Func<bool> Exiting;
         public event Action Exited;
 
-        /// <summary>
-        /// An unhandled exception was thrown. Return true to ignore and continue running.
-        /// </summary>
-        public event Func<Exception, bool> ExceptionThrown;
-
         public event Action<IpcMessage> MessageReceived;
 
         protected void OnMessageReceived(IpcMessage message) => MessageReceived?.Invoke(message);
@@ -117,7 +112,6 @@ namespace osu.Framework.Platform
         public void RegisterThread(GameThread t)
         {
             threads.Add(t);
-            t.UnhandledException = unhandledExceptionHandler;
             t.Monitor.EnablePerformanceProfiling = performanceLogging;
         }
 
@@ -166,9 +160,6 @@ namespace osu.Framework.Platform
         {
             toolkit = toolkitOptions != null ? Toolkit.Init(toolkitOptions) : Toolkit.Init();
 
-            AppDomain.CurrentDomain.UnhandledException += unhandledExceptionHandler;
-            TaskScheduler.UnobservedTaskException += unobservedExceptionHandler;
-
             Trace.Listeners.Clear();
             Trace.Listeners.Add(new ThrowingTraceListener());
 
@@ -201,50 +192,17 @@ namespace osu.Framework.Platform
                 (DrawThread = new DrawThread(DrawFrame)
                 {
                     OnThreadStart = DrawInitialize,
-                    UnhandledException = unhandledExceptionHandler
                 }),
                 (UpdateThread = new UpdateThread(UpdateFrame)
                 {
                     OnThreadStart = UpdateInitialize,
                     Monitor = { HandleGC = true },
-                    UnhandledException = unhandledExceptionHandler,
                 }),
-                (InputThread = new InputThread(null)
-                {
-                    UnhandledException = unhandledExceptionHandler
-                }), //never gets started.
+                (InputThread = new InputThread(null)), //never gets started.
             };
 
             if (assemblyPath != null)
                 Environment.CurrentDirectory = assemblyPath;
-        }
-
-        private void unhandledExceptionHandler(object sender, UnhandledExceptionEventArgs args)
-        {
-            var exception = (Exception)args.ExceptionObject;
-            exception.Data.Add("unhandled", "unhandled");
-            handleException(exception);
-        }
-
-        private void unobservedExceptionHandler(object sender, UnobservedTaskExceptionEventArgs args)
-        {
-            args.Exception.Data.Add("unhandled", "unobserved");
-            handleException(args.Exception);
-        }
-
-        private void handleException(Exception exception)
-        {
-            if (ExceptionThrown?.Invoke(exception) != true)
-            {
-                AppDomain.CurrentDomain.UnhandledException -= unhandledExceptionHandler;
-
-                var captured = ExceptionDispatchInfo.Capture(exception);
-
-                //we want to throw this exception on the input thread to interrupt window and also headless execution.
-                InputThread.Scheduler.Add(() => { captured.Throw(); });
-            }
-
-            Logger.Error(exception, $"An {exception.Data["unhandled"]} error has occurred.", recursive: true);
         }
 
         protected virtual void OnActivated() => UpdateThread.Scheduler.Add(() => setActive(true));
@@ -728,9 +686,6 @@ namespace osu.Framework.Platform
             // Delay disposal until the game has exited
             while (ExecutionState > ExecutionState.Stopped)
                 Thread.Sleep(10);
-
-            AppDomain.CurrentDomain.UnhandledException -= unhandledExceptionHandler;
-            TaskScheduler.UnobservedTaskException -= unobservedExceptionHandler;
 
             Root?.Dispose();
             Root = null;
