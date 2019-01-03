@@ -19,11 +19,13 @@ using osuTK.Graphics;
 using osuTK.Graphics.ES30;
 using osuTK.Input;
 using osu.Framework.Allocation;
+using osu.Framework.Audio;
 using osu.Framework.Configuration;
 using osu.Framework.Extensions.IEnumerableExtensions;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.OpenGL;
+using osu.Framework.Graphics.Textures;
 using osu.Framework.Input;
 using osu.Framework.Input.Bindings;
 using osu.Framework.Input.Handlers;
@@ -32,13 +34,11 @@ using osu.Framework.Statistics;
 using osu.Framework.Threading;
 using osu.Framework.Timing;
 using osu.Framework.IO.File;
+using osu.Framework.IO.Stores;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using osu.Framework.Audio;
-using osu.Framework.Graphics.Textures;
-using osu.Framework.IO.Stores;
 
 namespace osu.Framework.Platform
 {
@@ -698,6 +698,9 @@ namespace osu.Framework.Platform
 
         public abstract ITextInputSource GetTextInput();
 
+        public virtual AudioManager CreateAudioManager(ResourceStore<byte[]> trackStore, ResourceStore<byte[]> sampleStore, Scheduler eventScheduler) =>
+            new AudioManager(trackStore, sampleStore) { EventScheduler = eventScheduler };
+
         #region IDisposable Support
 
         private bool isDisposed;
@@ -777,6 +780,9 @@ namespace osu.Framework.Platform
             new KeyBinding(new KeyCombination(new[] { InputKey.Control, InputKey.Tab }), new PlatformAction(PlatformActionType.DocumentNext)),
             new KeyBinding(new KeyCombination(new[] { InputKey.Control, InputKey.Shift, InputKey.Tab }), new PlatformAction(PlatformActionType.DocumentPrevious)),
         };
+
+        public virtual IResourceStore<TextureUpload> CreateTextureLoaderStore(IResourceStore<byte[]> underlyingStore)
+            => new TextureLoaderStore(underlyingStore);
     }
 
     /// <summary>
