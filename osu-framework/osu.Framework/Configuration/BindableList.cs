@@ -421,7 +421,7 @@ namespace osu.Framework.Configuration
 
         #endregion IHasDescription
 
-        #region IBindableCollection
+        #region IBindableList
 
         /// <summary>
         /// Adds a collection of items to this <see cref="BindableList{T}"/>.
@@ -501,7 +501,7 @@ namespace osu.Framework.Configuration
             return copy;
         }
 
-        #endregion IBindableCollection
+        #endregion IBindableList
 
         #region IEnumerable
 
