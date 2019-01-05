@@ -29,9 +29,9 @@ namespace Symcol.Base.Touch
 
         public bool Tapped { get; set; }
 
-        protected bool Hovered { get; private set; }
+        protected bool Hovered { get; set; }
 
-        protected static bool Pressed { get; private set; }
+        protected static bool Pressed { get; set; }
 
         public TouchContainer()
         {
