@@ -1,22 +1,9 @@
-﻿using osu.Framework.Graphics;
-using osu.Framework.Input.Events;
+﻿using osu.Framework.Input.Events;
 
 namespace Symcol.Base.Touch
 {
     public class TouchToggle : TouchContainer
     {
-        protected override void Tap()
-        {
-            base.Tap();
-            Box.FadeTo(0.2f, 200);
-        }
-
-        protected override void Release()
-        {
-            base.Release();
-            Box.FadeTo(0, 200);
-        }
-
         protected override bool OnHover(HoverEvent e)
         {
             Hovered = true;

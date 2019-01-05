@@ -45,7 +45,7 @@ namespace Symcol.Base.Touch
                 {
                     RelativeSizeAxes = Axes.Both,
                     Alpha = 0,
-                    Colour = Color4.White,
+                    Colour = Color4.OrangeRed,
                 },
                 (SpriteText = new SpriteText
                 {
@@ -79,12 +79,18 @@ namespace Symcol.Base.Touch
         {
             Tapped = true;
             OnTap?.Invoke();
+
+            Box.FadeTo(0.25f, 200);
+            BorderColour = Color4.OrangeRed;
         }
 
         protected virtual void Release()
         {
             Tapped = false;
             OnRelease?.Invoke();
+
+            Box.FadeOut(200);
+            BorderColour = Color4.White;
         }
 
         protected override bool OnHover(HoverEvent e)
