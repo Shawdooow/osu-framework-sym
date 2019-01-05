@@ -52,7 +52,7 @@ namespace Symcol.Base.Touch
                     Anchor = Anchor.Centre,
                     Origin = Anchor.Centre,
                     Font = "Venera",
-                    TextSize = 32,
+                    TextSize = 20,
                     Alpha = 0.75f,
                     Text = "Text",
                 }).WithEffect(new GlowEffect
