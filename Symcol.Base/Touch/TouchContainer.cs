@@ -17,23 +17,27 @@ namespace Symcol.Base.Touch
     /// </summary>
     public class TouchContainer : SymcolContainer
     {
-        public override bool ReceivePositionalInputAt(Vector2 screenSpacePos) => true;
+        //public override bool ReceivePositionalInputAt(Vector2 screenSpacePos) => true;
 
         protected readonly Box Box;
 
         public readonly SpriteText SpriteText;
 
-        public Action OnTapped;
+        public Action OnTap;
 
-        public bool Pressed { get; set; }
+        public Action OnRelease;
 
-        public double DeadZone { get; set; } = 200d;
+        public bool Tapped { get; set; }
 
         protected bool Hovered { get; private set; }
+
+        protected static bool Pressed { get; private set; }
 
         public TouchContainer()
         {
             Clock = new DecoupleableInterpolatingFramedClock();
+
+            Size = new Vector2(100);
 
             Children = new Drawable[]
             {
@@ -48,8 +52,9 @@ namespace Symcol.Base.Touch
                     Anchor = Anchor.Centre,
                     Origin = Anchor.Centre,
                     Font = "Venera",
-                    TextSize = 40,
+                    TextSize = 32,
                     Alpha = 0.75f,
+                    Text = "Text",
                 }).WithEffect(new GlowEffect
                 {
                     Colour = Color4.Transparent,
@@ -57,6 +62,8 @@ namespace Symcol.Base.Touch
                 }),
             };
 
+            Masking = true;
+            Masking = true;
             BorderColour = Color4.White;
             BorderThickness = 6;
             EdgeEffect = new EdgeEffectParameters
@@ -68,34 +75,48 @@ namespace Symcol.Base.Touch
             };
         }
 
-        protected override void Update()
+        protected virtual void Tap()
         {
-            base.Update();
-
-            if (Time.Current >= Dead)
-            {
-                Dead = Time.Current + DeadZone;
-                Tapped();
-            }
+            Tapped = true;
+            OnTap?.Invoke();
         }
 
-        protected double Dead = double.MinValue;
-
-        protected virtual void Tapped()
+        protected virtual void Release()
         {
-            OnTapped?.Invoke();
+            Tapped = false;
+            OnRelease?.Invoke();
         }
 
         protected override bool OnHover(HoverEvent e)
         {
             Hovered = true;
+            if (Pressed && !Tapped)
+                Tap();
             return base.OnHover(e);
         }
 
         protected override void OnHoverLost(HoverLostEvent e)
         {
             Hovered = false;
+            if (Tapped)
+                Release();
             base.OnHoverLost(e);
+        }
+
+        protected override bool OnMouseDown(MouseDownEvent e)
+        {
+            Pressed = true;
+            if (Hovered && !Tapped)
+                Tap();
+            return base.OnMouseDown(e);
+        }
+
+        protected override bool OnMouseUp(MouseUpEvent e)
+        {
+            Pressed = false;
+            if (Hovered && Tapped)
+                Release();
+            return base.OnMouseUp(e);
         }
     }
 }
