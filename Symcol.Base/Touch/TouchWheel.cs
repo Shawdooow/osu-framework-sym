@@ -1,5 +1,6 @@
 ﻿using System;
 using osu.Framework.Graphics;
+using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Shapes;
 using osu.Framework.Input.Events;
 using osuTK;
@@ -14,24 +15,30 @@ namespace Symcol.Base.Touch
 
         public TouchWheelContainer()
         {
+            Name = "TouchWheelContainer";
             RelativeSizeAxes = Axes.Both;
             Width = 0.5f;
 
             AlwaysPresent = true;
-            //Alpha = 0;
+            Alpha = 1;
 
             Child = Wheel = new TouchWheel();
+
+            BorderThickness = 0;
+            EdgeEffect = new EdgeEffectParameters();
         }
 
         protected override void Tap()
         {
             //base.Tap();
+            Tapped = true;
             Wheel.FadeIn(200);
         }
 
         protected override void Release()
         {
             //base.Release();
+            Tapped = false;
             Wheel.FadeOut(200);
         }
 
@@ -45,6 +52,8 @@ namespace Symcol.Base.Touch
         protected override void OnHoverLost(HoverLostEvent e)
         {
             Hovered = false;
+            if (Tapped)
+                Release();
             //base.OnHoverLost(e);
         }
 
@@ -75,9 +84,15 @@ namespace Symcol.Base.Touch
 
             public TouchWheel()
             {
-                Size = new Vector2(300);
+                Name = "TouchWheel";
+                Anchor = Anchor.Centre;
+                Origin = Anchor.Centre;
 
-                Masking = true;
+                Size = new Vector2(200);
+
+                AlwaysPresent = true;
+                //Masking = true;
+                Alpha = 1;
 
                 Children = new Drawable[]
                 {
@@ -91,6 +106,7 @@ namespace Symcol.Base.Touch
                         RelativeSizeAxes = Axes.Both,
                         Size = new Vector2(0.25f),
 
+                        Masking = true,
                         BorderColour = Color4.Cyan,
                         BorderThickness = 6,
 
@@ -110,6 +126,7 @@ namespace Symcol.Base.Touch
 
             public TouchWheelButton(Anchor anchor)
             {
+                Name = "TouchWheelButton";
                 Add(Mask = new SymcolCircularContainer
                 {
                     RelativeSizeAxes = Axes.Both,
@@ -129,7 +146,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.BottomRight;
-                        Anchor = Anchor.BottomRight;
+                        Anchor = Anchor.TopLeft;
                         Origin = Anchor.BottomRight;
                         break;
                     case Anchor.TopCentre:
@@ -137,7 +154,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.BottomCentre;
-                        Anchor = Anchor.BottomCentre;
+                        Anchor = Anchor.TopCentre;
                         Origin = Anchor.BottomCentre;
                         break;
                     case Anchor.TopRight:
@@ -145,7 +162,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.BottomLeft;
-                        Anchor = Anchor.BottomLeft;
+                        Anchor = Anchor.TopRight;
                         Origin = Anchor.BottomLeft;
                         break;
                     case Anchor.CentreLeft:
@@ -153,7 +170,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.CentreRight;
-                        Anchor = Anchor.CentreRight;
+                        Anchor = Anchor.CentreLeft;
                         Origin = Anchor.CentreRight;
                         break;
                     case Anchor.CentreRight:
@@ -161,7 +178,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.CentreLeft;
-                        Anchor = Anchor.CentreLeft;
+                        Anchor = Anchor.CentreRight;
                         Origin = Anchor.CentreLeft;
                         break;
                     case Anchor.BottomLeft:
@@ -169,15 +186,15 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.TopRight;
-                        Anchor = Anchor.TopRight;
+                        Anchor = Anchor.BottomLeft;
                         Origin = Anchor.TopRight;
                         break;
                     case Anchor.BottomCentre:
-                        Position = new Vector2(0, -corner_offset);
+                        Position = new Vector2(0, corner_offset);
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.TopCentre;
-                        Anchor = Anchor.TopCentre;
+                        Anchor = Anchor.BottomCentre;
                         Origin = Anchor.TopCentre;
                         break;
                     case Anchor.BottomRight:
@@ -185,7 +202,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.TopLeft;
-                        Anchor = Anchor.TopLeft;
+                        Anchor = Anchor.BottomRight;
                         Origin = Anchor.TopLeft;
                         break;
                 }
@@ -198,6 +215,7 @@ namespace Symcol.Base.Touch
 
             public TouchWheelToggle(Anchor anchor)
             {
+                Name = "TouchWheelToggle";
                 Add(Mask = new SymcolCircularContainer
                 {
                     RelativeSizeAxes = Axes.Both,
@@ -217,7 +235,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.BottomRight;
-                        Anchor = Anchor.BottomRight;
+                        Anchor = Anchor.TopLeft;
                         Origin = Anchor.BottomRight;
                         break;
                     case Anchor.TopCentre:
@@ -225,7 +243,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.BottomCentre;
-                        Anchor = Anchor.BottomCentre;
+                        Anchor = Anchor.TopCentre;
                         Origin = Anchor.BottomCentre;
                         break;
                     case Anchor.TopRight:
@@ -233,7 +251,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.BottomLeft;
-                        Anchor = Anchor.BottomLeft;
+                        Anchor = Anchor.TopRight;
                         Origin = Anchor.BottomLeft;
                         break;
                     case Anchor.CentreLeft:
@@ -241,7 +259,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.CentreRight;
-                        Anchor = Anchor.CentreRight;
+                        Anchor = Anchor.CentreLeft;
                         Origin = Anchor.CentreRight;
                         break;
                     case Anchor.CentreRight:
@@ -249,7 +267,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.CentreLeft;
-                        Anchor = Anchor.CentreLeft;
+                        Anchor = Anchor.CentreRight;
                         Origin = Anchor.CentreLeft;
                         break;
                     case Anchor.BottomLeft:
@@ -257,15 +275,15 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.TopRight;
-                        Anchor = Anchor.TopRight;
+                        Anchor = Anchor.BottomLeft;
                         Origin = Anchor.TopRight;
                         break;
                     case Anchor.BottomCentre:
-                        Position = new Vector2(0, -corner_offset);
+                        Position = new Vector2(0, corner_offset);
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.TopCentre;
-                        Anchor = Anchor.TopCentre;
+                        Anchor = Anchor.BottomCentre;
                         Origin = Anchor.TopCentre;
                         break;
                     case Anchor.BottomRight:
@@ -273,7 +291,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.TopLeft;
-                        Anchor = Anchor.TopLeft;
+                        Anchor = Anchor.BottomRight;
                         Origin = Anchor.TopLeft;
                         break;
                 }

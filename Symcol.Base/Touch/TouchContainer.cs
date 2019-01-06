@@ -38,6 +38,7 @@ namespace Symcol.Base.Touch
             Clock = new DecoupleableInterpolatingFramedClock();
 
             Size = new Vector2(100);
+            AlwaysPresent = true;
 
             Children = new Drawable[]
             {
@@ -62,7 +63,6 @@ namespace Symcol.Base.Touch
                 }),
             };
 
-            Masking = true;
             Masking = true;
             BorderColour = Color4.White;
             BorderThickness = 6;
