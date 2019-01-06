@@ -32,14 +32,14 @@ namespace Symcol.Base.Touch
         {
             //base.Tap();
             Tapped = true;
-            Wheel.FadeIn(200);
+            Wheel.Alpha = 1;
         }
 
         protected override void Release()
         {
             //base.Release();
             Tapped = false;
-            Wheel.FadeOut(200);
+            Wheel.Alpha = 0;
         }
 
         protected override bool OnHover(HoverEvent e)
@@ -88,11 +88,11 @@ namespace Symcol.Base.Touch
                 Anchor = Anchor.Centre;
                 Origin = Anchor.Centre;
 
-                Size = new Vector2(200);
+                Size = new Vector2(600);
 
                 AlwaysPresent = true;
-                //Masking = true;
-                Alpha = 1;
+                Masking = true;
+                Alpha = 0;
 
                 Children = new Drawable[]
                 {
@@ -135,7 +135,7 @@ namespace Symcol.Base.Touch
                     Alpha = 0,
                 });
 
-                const float corner_offset = 50f;
+                const float corner_offset = 75f;
 
                 switch (anchor)
                 {
@@ -146,7 +146,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.BottomRight;
-                        Anchor = Anchor.TopLeft;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.BottomRight;
                         break;
                     case Anchor.TopCentre:
@@ -154,7 +154,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.BottomCentre;
-                        Anchor = Anchor.TopCentre;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.BottomCentre;
                         break;
                     case Anchor.TopRight:
@@ -162,7 +162,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.BottomLeft;
-                        Anchor = Anchor.TopRight;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.BottomLeft;
                         break;
                     case Anchor.CentreLeft:
@@ -170,7 +170,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.CentreRight;
-                        Anchor = Anchor.CentreLeft;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.CentreRight;
                         break;
                     case Anchor.CentreRight:
@@ -178,7 +178,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.CentreLeft;
-                        Anchor = Anchor.CentreRight;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.CentreLeft;
                         break;
                     case Anchor.BottomLeft:
@@ -186,7 +186,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.TopRight;
-                        Anchor = Anchor.BottomLeft;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.TopRight;
                         break;
                     case Anchor.BottomCentre:
@@ -194,7 +194,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.TopCentre;
-                        Anchor = Anchor.BottomCentre;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.TopCentre;
                         break;
                     case Anchor.BottomRight:
@@ -202,7 +202,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.TopLeft;
-                        Anchor = Anchor.BottomRight;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.TopLeft;
                         break;
                 }
@@ -224,7 +224,7 @@ namespace Symcol.Base.Touch
                     Alpha = 0,
                 });
 
-                const float corner_offset = 50f;
+                const float corner_offset = 75f;
 
                 switch (anchor)
                 {
@@ -235,7 +235,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.BottomRight;
-                        Anchor = Anchor.TopLeft;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.BottomRight;
                         break;
                     case Anchor.TopCentre:
@@ -243,7 +243,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.BottomCentre;
-                        Anchor = Anchor.TopCentre;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.BottomCentre;
                         break;
                     case Anchor.TopRight:
@@ -251,7 +251,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.BottomLeft;
-                        Anchor = Anchor.TopRight;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.BottomLeft;
                         break;
                     case Anchor.CentreLeft:
@@ -259,7 +259,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.CentreRight;
-                        Anchor = Anchor.CentreLeft;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.CentreRight;
                         break;
                     case Anchor.CentreRight:
@@ -267,7 +267,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.CentreLeft;
-                        Anchor = Anchor.CentreRight;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.CentreLeft;
                         break;
                     case Anchor.BottomLeft:
@@ -275,7 +275,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.TopRight;
-                        Anchor = Anchor.BottomLeft;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.TopRight;
                         break;
                     case Anchor.BottomCentre:
@@ -283,7 +283,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.TopCentre;
-                        Anchor = Anchor.BottomCentre;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.TopCentre;
                         break;
                     case Anchor.BottomRight:
@@ -291,7 +291,7 @@ namespace Symcol.Base.Touch
                         Mask.Position = -Position;
 
                         Mask.Anchor = Anchor.TopLeft;
-                        Anchor = Anchor.BottomRight;
+                        Anchor = Anchor.Centre;
                         Origin = Anchor.TopLeft;
                         break;
                 }
