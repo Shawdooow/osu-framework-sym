@@ -75,7 +75,7 @@ namespace Symcol.Base.Touch
             };
         }
 
-        protected virtual void Tap()
+        public virtual void Tap()
         {
             Tapped = true;
             OnTap?.Invoke();
@@ -84,7 +84,7 @@ namespace Symcol.Base.Touch
             BorderColour = Color4.OrangeRed;
         }
 
-        protected virtual void Release()
+        public virtual void Release()
         {
             Tapped = false;
             OnRelease?.Invoke();

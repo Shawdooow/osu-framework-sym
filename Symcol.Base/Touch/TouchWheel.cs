@@ -17,6 +17,7 @@ namespace Symcol.Base.Touch
         {
             Name = "TouchWheelContainer";
             RelativeSizeAxes = Axes.Both;
+            Height = 1;
             Width = 0.5f;
 
             AlwaysPresent = true;
@@ -28,24 +29,28 @@ namespace Symcol.Base.Touch
             EdgeEffect = new EdgeEffectParameters();
         }
 
-        protected override void Tap()
+        public override void Tap()
         {
             //base.Tap();
             Tapped = true;
             Wheel.Alpha = 1;
         }
 
-        protected override void Release()
+        public override void Release()
         {
             //base.Release();
             Tapped = false;
             Wheel.Alpha = 0;
+
+            foreach (TouchContainer touch in Wheel.Buttons)
+                if (!(touch is TouchToggle))
+                    touch.Release();
         }
 
         protected override bool OnHover(HoverEvent e)
         {
             Hovered = true;
-            return true;
+            return false;
             //return base.OnHover(e);
         }
 
@@ -62,7 +67,7 @@ namespace Symcol.Base.Touch
             Pressed = true;
             if (!Tapped)
                 Tap();
-            return true;
+            return false;
             //return base.OnMouseDown(e);
         }
 
@@ -71,7 +76,7 @@ namespace Symcol.Base.Touch
             Pressed = false;
             if (Tapped)
                 Release();
-            return true;
+            return false;
             //return base.OnMouseUp(e);
         }
 
@@ -127,6 +132,9 @@ namespace Symcol.Base.Touch
             public TouchWheelButton(Anchor anchor)
             {
                 Name = "TouchWheelButton";
+
+                Size = new Vector2(75);
+
                 Add(Mask = new SymcolCircularContainer
                 {
                     RelativeSizeAxes = Axes.Both,
@@ -135,7 +143,7 @@ namespace Symcol.Base.Touch
                     Alpha = 0,
                 });
 
-                const float corner_offset = 75f;
+                const float corner_offset = 40f;
 
                 switch (anchor)
                 {
@@ -216,6 +224,9 @@ namespace Symcol.Base.Touch
             public TouchWheelToggle(Anchor anchor)
             {
                 Name = "TouchWheelToggle";
+
+                Size = new Vector2(75);
+
                 Add(Mask = new SymcolCircularContainer
                 {
                     RelativeSizeAxes = Axes.Both,
@@ -224,7 +235,7 @@ namespace Symcol.Base.Touch
                     Alpha = 0,
                 });
 
-                const float corner_offset = 75f;
+                const float corner_offset = 40f;
 
                 switch (anchor)
                 {
