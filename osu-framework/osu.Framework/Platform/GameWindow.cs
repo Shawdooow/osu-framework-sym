@@ -1,5 +1,5 @@
-﻿// Copyright (c) 2007-2018 ppy Pty Ltd <contact@ppy.sh>.
-// Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-framework/master/LICENCE
+﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
+// See the LICENCE file in the repository root for full licence text.
 
 using System;
 using System.Collections.Generic;
@@ -188,6 +188,13 @@ namespace osu.Framework.Platform
         public abstract void SetupWindow(FrameworkConfigManager config);
 
         protected virtual void OnKeyDown(object sender, KeyboardKeyEventArgs e) => KeyDown?.Invoke(sender, e);
+
+        /// <summary>
+        /// Provides a <see cref="BindableMarginPadding"/> that can be used to keep track of the "safe area" insets on mobile
+        /// devices.  This usually corresponds to areas of the screen hidden under notches and rounded corners.
+        /// The safe area insets are provided by the operating system and dynamically change as the user rotates the device.
+        /// </summary>
+        public readonly BindableMarginPadding SafeAreaPadding = new BindableMarginPadding();
 
         public virtual VSyncMode VSync { get; set; }
 

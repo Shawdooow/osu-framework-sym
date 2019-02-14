@@ -1,5 +1,5 @@
-﻿// Copyright (c) 2007-2018 ppy Pty Ltd <contact@ppy.sh>.
-// Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-framework/master/LICENCE
+﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
+// See the LICENCE file in the repository root for full licence text.
 
 using System;
 using System.Collections.Generic;
@@ -36,7 +36,6 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using osu.Framework.Audio;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.IO.Stores;
 
@@ -79,6 +78,16 @@ namespace osu.Framework.Platform
         public event Func<Exception, bool> ExceptionThrown;
 
         public event Action<IpcMessage> MessageReceived;
+
+        /// <summary>
+        /// Whether the on screen keyboard covers a portion of the game window when presented to the user.
+        /// </summary>
+        public virtual bool OnScreenKeyboardOverlapsGameWindow => false;
+
+        /// <summary>
+        /// Whether this host can exit (mobile platforms, for instance, do not support exiting the app).
+        /// </summary>
+        public virtual bool CanExit => true;
 
         protected void OnMessageReceived(IpcMessage message) => MessageReceived?.Invoke(message);
 
@@ -217,6 +226,34 @@ namespace osu.Framework.Platform
 
             if (assemblyPath != null)
                 Environment.CurrentDirectory = assemblyPath;
+        }
+
+        private void unhandledExceptionHandler(object sender, UnhandledExceptionEventArgs args)
+        {
+            var exception = (Exception)args.ExceptionObject;
+            exception.Data.Add("unhandled", "unhandled");
+            handleException(exception);
+        }
+
+        private void unobservedExceptionHandler(object sender, UnobservedTaskExceptionEventArgs args)
+        {
+            args.Exception.Data.Add("unhandled", "unobserved");
+            handleException(args.Exception);
+        }
+
+        private void handleException(Exception exception)
+        {
+            if (ExceptionThrown?.Invoke(exception) != true)
+            {
+                AppDomain.CurrentDomain.UnhandledException -= unhandledExceptionHandler;
+
+                var captured = ExceptionDispatchInfo.Capture(exception);
+
+                //we want to throw this exception on the input thread to interrupt window and also headless execution.
+                InputThread.Scheduler.Add(() => { captured.Throw(); });
+            }
+
+            Logger.Error(exception, $"An {exception.Data["unhandled"]} error has occurred.", recursive: true);
         }
 
         protected virtual void OnActivated() => UpdateThread.Scheduler.Add(() => setActive(true));
@@ -363,10 +400,7 @@ namespace osu.Framework.Platform
                 if (GraphicsContext.CurrentContext == null)
                     throw new GraphicsContextMissingException();
 
-                osuTK.Graphics.OpenGL.GL.ReadPixels(0, 0, image.Width, image.Height,
-                    osuTK.Graphics.OpenGL.PixelFormat.Rgba,
-                    osuTK.Graphics.OpenGL.PixelType.UnsignedByte,
-                    ref MemoryMarshal.GetReference(image.GetPixelSpan()));
+                GL.ReadPixels(0, 0, image.Width, image.Height, PixelFormat.Rgba, PixelType.UnsignedByte, ref MemoryMarshal.GetReference(image.GetPixelSpan()));
 
                 complete = true;
             });
@@ -680,9 +714,6 @@ namespace osu.Framework.Platform
         public IEnumerable<InputHandler> AvailableInputHandlers { get; private set; }
 
         public abstract ITextInputSource GetTextInput();
-
-        public virtual AudioManager CreateAudioManager(ResourceStore<byte[]> trackStore, ResourceStore<byte[]> sampleStore, Scheduler eventScheduler) =>
-            new AudioManager(trackStore, sampleStore) { EventScheduler = eventScheduler };
 
         #region IDisposable Support
 

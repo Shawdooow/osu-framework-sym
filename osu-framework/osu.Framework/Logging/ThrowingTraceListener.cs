@@ -1,5 +1,5 @@
-// Copyright (c) 2007-2018 ppy Pty Ltd <contact@ppy.sh>.
-// Licensed under the MIT Licence - https://raw.githubusercontent.com/ppy/osu-framework/master/LICENCE
+// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
+// See the LICENCE file in the repository root for full licence text.
 
 using System.Diagnostics;
 using NUnit.Framework;
@@ -20,8 +20,8 @@ namespace osu.Framework.Logging
         {
         }
 
-        //public override void Fail(string message) => throw new AssertionException(message);
+        public override void Fail(string message) => throw new AssertionException(message);
 
-        //public override void Fail(string message1, string message2) => throw new AssertionException($"{message1}: {message2}");
+        public override void Fail(string message1, string message2) => throw new AssertionException($"{message1}: {message2}");
     }
 }
