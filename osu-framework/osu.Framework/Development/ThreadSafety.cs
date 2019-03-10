@@ -40,6 +40,19 @@ namespace osu.Framework.Development
 
         public static bool IsDrawThread => is_draw_thread.Value;
 
-        public static bool IsAudioThread => is_audio_thread.Value;
+        public static bool IsAudioThread
+        {
+            get
+            {
+                try
+                {
+                    return is_audio_thread.Value;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
     }
 }
