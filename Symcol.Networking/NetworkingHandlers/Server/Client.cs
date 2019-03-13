@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using osu.Framework.Logging;
+using Symcol.Networking.Packets;
 
 // ReSharper disable InconsistentNaming
 
@@ -43,6 +44,8 @@ namespace Symcol.Networking.NetworkingHandlers.Server
                 }
             }
         }
+
+        public Action<ServerPacketInfo> PacketRecieved;
 
         public event Action OnConnecting;
 
