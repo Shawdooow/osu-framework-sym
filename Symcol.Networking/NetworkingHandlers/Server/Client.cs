@@ -45,8 +45,6 @@ namespace Symcol.Networking.NetworkingHandlers.Server
             }
         }
 
-        public Action<ServerPacketInfo> PacketRecieved;
-
         public event Action OnConnecting;
 
         public event Action OnConnected;

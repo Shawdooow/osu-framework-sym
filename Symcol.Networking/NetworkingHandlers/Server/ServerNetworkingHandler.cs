@@ -54,10 +54,6 @@ namespace Symcol.Networking.NetworkingHandlers.Server
 
             ServerPacketInfo serverInfo = (ServerPacketInfo)info;
 
-            foreach (Client client in Clients)
-                if (GetLastClient().EndPoint.Equals(client.EndPoint))
-                    client.PacketRecieved?.Invoke(serverInfo);
-
             switch (info.Packet)
             {
                 case ConnectPacket connectPacket:
