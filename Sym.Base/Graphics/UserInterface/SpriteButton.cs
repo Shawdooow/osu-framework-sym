@@ -1,17 +1,17 @@
 ﻿using osu.Framework.Allocation;
 using osu.Framework.Graphics;
+using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Shapes;
 using osu.Framework.Graphics.Sprites;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.Input.Events;
-using Sym.Base.Graphics.Containers;
 
 namespace Sym.Base.Graphics.UserInterface
 {
     /// <summary>
     /// just a Button with a sprite
     /// </summary>
-    public class SpriteButton : SymcolClickableContainer
+    public class SpriteButton : ClickableContainer
     {
         private readonly string textureName;
 

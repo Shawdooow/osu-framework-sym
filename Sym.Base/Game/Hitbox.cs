@@ -2,11 +2,10 @@
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osuTK;
-using Sym.Base.Graphics.Containers;
 
 namespace Sym.Base.Game
 {
-    public class Hitbox : SymcolContainer
+    public class Hitbox : Container
     {
         /// <summary>
         /// whether we want to do hit detection

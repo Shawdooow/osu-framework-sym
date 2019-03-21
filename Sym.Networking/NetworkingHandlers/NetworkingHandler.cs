@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using osu.Framework.Graphics.Containers;
 using osu.Framework.Timing;
-using Sym.Base.Graphics.Containers;
 using Sym.Networking.NetworkingClients;
 using Sym.Networking.Packets;
 
@@ -9,7 +9,7 @@ using Sym.Networking.Packets;
 
 namespace Sym.Networking.NetworkingHandlers
 {
-    public abstract class NetworkingHandler : SymcolContainer
+    public abstract class NetworkingHandler : Container
     {
         #region Fields
 

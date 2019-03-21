@@ -8,14 +8,13 @@ using osu.Framework.Input.Events;
 using osu.Framework.Timing;
 using osuTK;
 using osuTK.Graphics;
-using Sym.Base.Graphics.Containers;
 
 namespace Sym.Base.Touch
 {
     /// <summary>
     /// This class is a hack, don't take it seriously (but it should work on ios so...)
     /// </summary>
-    public class TouchContainer : SymcolContainer
+    public class TouchContainer : Container
     {
         //public override bool ReceivePositionalInputAt(Vector2 screenSpacePos) => true;
 

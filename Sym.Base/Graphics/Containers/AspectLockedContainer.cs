@@ -1,4 +1,5 @@
 ﻿using osu.Framework.Graphics;
+using osu.Framework.Graphics.Containers;
 using osuTK;
 
 namespace Sym.Base.Graphics.Containers
@@ -7,7 +8,7 @@ namespace Sym.Base.Graphics.Containers
     {
     }
 
-    public class AspectLockedContainer<T> : SymcolContainer<T>
+    public class AspectLockedContainer<T> : Container<T>
         where T : Drawable
     {
         public new float Margin = 1;

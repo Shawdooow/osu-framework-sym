@@ -1,11 +1,12 @@
 ﻿using System;
 using osu.Framework.Graphics;
+using osu.Framework.Graphics.Containers;
 using osu.Framework.Input.Events;
 using osuTK;
 
 namespace Sym.Base.Graphics.Containers
 {
-    public class DialContainer : SymcolCircularContainer
+    public class DialContainer : CircularContainer
     {
         public override bool ReceivePositionalInputAt(Vector2 screenSpacePos) => true;
 

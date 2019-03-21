@@ -1,4 +1,5 @@
 ﻿using osu.Framework.Graphics;
+using osu.Framework.Graphics.Containers;
 
 namespace Sym.Base.Graphics.Containers
 {
@@ -9,7 +10,7 @@ namespace Sym.Base.Graphics.Containers
     {
     }
 
-    public class DeadContainer<T> : SymcolContainer<T>
+    public class DeadContainer<T> : Container<T>
         where T : Drawable
     {
         public override bool HandleNonPositionalInput => false;

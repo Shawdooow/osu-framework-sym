@@ -1,10 +1,10 @@
-﻿using Sym.Base.Graphics.Containers;
+﻿using osu.Framework.Graphics.Containers;
 using Sym.Networking.NetworkingHandlers.Peer;
 using Sym.Networking.Packets;
 
 namespace Sym.Networking.Containers
 {
-    public class PeerNetworkingContainer : SymcolContainer
+    public class PeerNetworkingContainer : Container
     {
         public readonly PeerNetworkingHandler PeerNetworkingHandler;
 

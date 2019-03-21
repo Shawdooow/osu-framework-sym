@@ -5,7 +5,6 @@ using osu.Framework.Graphics.Shapes;
 using osu.Framework.Input.Events;
 using osuTK;
 using osuTK.Graphics;
-using Sym.Base.Graphics.Containers;
 
 namespace Sym.Base.Touch
 {
@@ -80,9 +79,9 @@ namespace Sym.Base.Touch
             //return base.OnMouseUp(e);
         }
 
-        public class TouchWheel : SymcolCircularContainer
+        public class TouchWheel : CircularContainer
         {
-            public SymcolContainer<TouchContainer> Buttons = new SymcolContainer<TouchContainer>
+            public Container<TouchContainer> Buttons = new Container<TouchContainer>
             {
                 RelativeSizeAxes = Axes.Both,
             };
@@ -102,7 +101,7 @@ namespace Sym.Base.Touch
                 Children = new Drawable[]
                 {
                     Buttons,
-                    new SymcolCircularContainer
+                    new CircularContainer
                     {
                         Anchor = Anchor.Centre,
                         Origin = Anchor.Centre,
@@ -127,7 +126,7 @@ namespace Sym.Base.Touch
 
         public class TouchWheelButton : TouchContainer
         {
-            protected readonly SymcolCircularContainer Mask;
+            protected readonly CircularContainer Mask;
 
             public TouchWheelButton(Anchor anchor)
             {
@@ -135,7 +134,7 @@ namespace Sym.Base.Touch
 
                 Size = new Vector2(75);
 
-                Add(Mask = new SymcolCircularContainer
+                Add(Mask = new CircularContainer
                 {
                     RelativeSizeAxes = Axes.Both,
                     Origin = Anchor.Centre,
@@ -219,7 +218,7 @@ namespace Sym.Base.Touch
 
         public class TouchWheelToggle : TouchToggle
         {
-            protected readonly SymcolCircularContainer Mask;
+            protected readonly CircularContainer Mask;
 
             public TouchWheelToggle(Anchor anchor)
             {
@@ -227,7 +226,7 @@ namespace Sym.Base.Touch
 
                 Size = new Vector2(75);
 
-                Add(Mask = new SymcolCircularContainer
+                Add(Mask = new CircularContainer
                 {
                     RelativeSizeAxes = Axes.Both,
                     Origin = Anchor.Centre,

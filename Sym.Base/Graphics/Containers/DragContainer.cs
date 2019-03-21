@@ -1,9 +1,10 @@
-﻿using osu.Framework.Input.Events;
+﻿using osu.Framework.Graphics.Containers;
+using osu.Framework.Input.Events;
 using osuTK.Input;
 
 namespace Sym.Base.Graphics.Containers
 {
-    public class DragContainer : SymcolContainer
+    public class DragContainer : Container
     {
         protected override bool OnDragStart(DragStartEvent e) => true;
 

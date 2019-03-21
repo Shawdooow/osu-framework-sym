@@ -6,11 +6,10 @@ using osu.Framework.Input.Events;
 using osuTK;
 using osuTK.Graphics;
 using osuTK.Input;
-using Sym.Base.Graphics.Containers;
 
 namespace Sym.Base.Graphics.UserInterface
 {
-    public class SymcolWindow : SymcolContainer
+    public class SymWindow : Container
     {
         /// <summary>
         /// Put all your stuff in this
@@ -20,7 +19,7 @@ namespace Sym.Base.Graphics.UserInterface
 
         private readonly ClickableContainer minimize;
 
-        public SymcolWindow(Vector2 size)
+        public SymWindow(Vector2 size)
         {
             Container topBar;
             Anchor = Anchor.Centre;

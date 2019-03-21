@@ -1,10 +1,11 @@
 ﻿using osu.Framework.Graphics;
+using osu.Framework.Graphics.Containers;
 using osu.Framework.MathUtils;
 using osuTK;
 
 namespace Sym.Base.Graphics.Containers
 {
-    public abstract class ParticleContainer : SymcolContainer
+    public abstract class ParticleContainer : Container
     {
         public MotionType MotionType;
 
