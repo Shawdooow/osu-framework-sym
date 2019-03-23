@@ -1,9 +1,13 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.IO;
 using System.Net;
 using System.Runtime.Serialization.Formatters.Binary;
 using osu.Framework.Logging;
 using Sym.Networking.Packets;
+
+#endregion
 
 // ReSharper disable InconsistentNaming
 

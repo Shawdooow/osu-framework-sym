@@ -1,9 +1,13 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Collections.Generic;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Timing;
 using Sym.Networking.NetworkingClients;
 using Sym.Networking.Packets;
+
+#endregion
 
 // ReSharper disable InconsistentNaming
 

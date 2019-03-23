@@ -1,8 +1,12 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Input.Events;
 using osuTK;
+
+#endregion
 
 namespace Sym.Base.Graphics.Containers
 {
@@ -33,7 +37,7 @@ namespace Sym.Base.Graphics.Containers
         {
             base.Update();
 
-            var thisAngle = -(float)MathHelper.RadiansToDegrees(Math.Atan2(mousePosition.X - DrawSize.X / 2, mousePosition.Y - DrawSize.Y / 2));
+            float thisAngle = -(float)MathHelper.RadiansToDegrees(Math.Atan2(mousePosition.X - DrawSize.X / 2, mousePosition.Y - DrawSize.Y / 2));
 
 
             if (!rotationTransferred)

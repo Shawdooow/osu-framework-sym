@@ -1,6 +1,10 @@
-﻿using osu.Framework.Graphics.Containers;
+﻿#region usings
+
+using osu.Framework.Graphics.Containers;
 using Sym.Networking.NetworkingHandlers.Peer;
 using Sym.Networking.Packets;
+
+#endregion
 
 namespace Sym.Networking.Containers
 {

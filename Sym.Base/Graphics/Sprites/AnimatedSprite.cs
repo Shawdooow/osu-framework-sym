@@ -1,6 +1,10 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Linq;
 using osu.Framework.Graphics.Textures;
+
+#endregion
 
 namespace Sym.Base.Graphics.Sprites
 {

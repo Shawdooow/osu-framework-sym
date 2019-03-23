@@ -1,7 +1,11 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Net;
 using System.Net.Sockets;
 using osu.Framework.Logging;
+
+#endregion
 
 // ReSharper disable VirtualMemberCallInConstructor
 

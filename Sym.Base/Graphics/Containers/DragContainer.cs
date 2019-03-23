@@ -1,6 +1,10 @@
-﻿using osu.Framework.Graphics.Containers;
+﻿#region usings
+
+using osu.Framework.Graphics.Containers;
 using osu.Framework.Input.Events;
 using osuTK.Input;
+
+#endregion
 
 namespace Sym.Base.Graphics.Containers
 {

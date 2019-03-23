@@ -1,8 +1,12 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Collections.Generic;
 using osu.Framework.Logging;
 using Sym.Networking.NetworkingClients;
 using Sym.Networking.Packets;
+
+#endregion
 
 namespace Sym.Networking.NetworkingHandlers.Peer
 {

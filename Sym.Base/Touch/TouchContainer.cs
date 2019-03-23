@@ -1,4 +1,6 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Effects;
@@ -8,6 +10,8 @@ using osu.Framework.Input.Events;
 using osu.Framework.Timing;
 using osuTK;
 using osuTK.Graphics;
+
+#endregion
 
 namespace Sym.Base.Touch
 {

@@ -1,5 +1,9 @@
-﻿using System.Net;
+﻿#region usings
+
+using System.Net;
 using Sym.Networking.Packets;
+
+#endregion
 
 namespace Sym.Networking.NetworkingClients
 {

@@ -1,6 +1,11 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.ComponentModel;
 using System.Globalization;
+using System.Reflection;
+
+#endregion
 
 namespace Sym.Base.Extentions
 {
@@ -19,8 +24,8 @@ namespace Sym.Base.Extentions
                 {
                     if (val == e.ToInt32(CultureInfo.InvariantCulture))
                     {
-                        var memInfo = type.GetMember(type.GetEnumName(val));
-                        var descriptionAttributes = memInfo[0].GetCustomAttributes(typeof(DescriptionAttribute), false);
+                        MemberInfo[] memInfo = type.GetMember(type.GetEnumName(val));
+                        object[] descriptionAttributes = memInfo[0].GetCustomAttributes(typeof(DescriptionAttribute), false);
                         if (descriptionAttributes.Length > 0)
                         {
                             // we're only getting the first description we find

@@ -1,8 +1,12 @@
-﻿using System.Collections.Generic;
+﻿#region usings
+
+using System.Collections.Generic;
 using System.Net;
 using osu.Framework.Logging;
 using Sym.Networking.NetworkingClients;
 using Sym.Networking.Packets;
+
+#endregion
 
 namespace Sym.Networking.NetworkingHandlers.Server
 {

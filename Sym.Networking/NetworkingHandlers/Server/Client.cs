@@ -1,6 +1,10 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Net;
 using osu.Framework.Logging;
+
+#endregion
 
 // ReSharper disable InconsistentNaming
 

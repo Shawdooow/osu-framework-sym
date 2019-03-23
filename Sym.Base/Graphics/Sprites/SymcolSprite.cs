@@ -1,4 +1,8 @@
-﻿using osu.Framework.Graphics.Sprites;
+﻿#region usings
+
+using osu.Framework.Graphics.Sprites;
+
+#endregion
 
 namespace Sym.Base.Graphics.Sprites
 {

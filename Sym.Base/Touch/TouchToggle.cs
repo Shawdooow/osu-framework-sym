@@ -1,4 +1,8 @@
-﻿using osu.Framework.Input.Events;
+﻿#region usings
+
+using osu.Framework.Input.Events;
+
+#endregion
 
 namespace Sym.Base.Touch
 {

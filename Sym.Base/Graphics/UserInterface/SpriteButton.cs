@@ -1,10 +1,14 @@
-﻿using osu.Framework.Allocation;
+﻿#region usings
+
+using osu.Framework.Allocation;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Shapes;
 using osu.Framework.Graphics.Sprites;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.Input.Events;
+
+#endregion
 
 namespace Sym.Base.Graphics.UserInterface
 {
@@ -61,7 +65,7 @@ namespace Sym.Base.Graphics.UserInterface
         {
             if (Enabled.Value)
             {
-                var flash = new Box
+                Box flash = new Box
                 {
                     RelativeSizeAxes = Axes.Both,
                     Alpha = 0.5f
