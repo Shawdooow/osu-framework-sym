@@ -2,6 +2,7 @@
 
 using System;
 using System.Linq;
+using osu.Framework.Graphics.Sprites;
 using osu.Framework.Graphics.Textures;
 
 #endregion
@@ -11,7 +12,7 @@ namespace Sym.Base.Graphics.Sprites
     /// <summary>
     /// A Sprite that will cycle through multiple Textures after a fixed time (Speed)
     /// </summary>
-    public class AnimatedSprite : SymcolSprite
+    public class AnimatedSprite : Sprite
     {
         /// <summary>
         /// The list of Textures we will cycle through

@@ -43,7 +43,7 @@ namespace Sym.Base.Touch
         {
             //base.Release();
             Tapped = false;
-            Wheel.Alpha = 0;
+            Wheel.Alpha = 0.1f;
 
             foreach (TouchContainer touch in Wheel.Buttons)
                 if (!(touch is TouchToggle))
