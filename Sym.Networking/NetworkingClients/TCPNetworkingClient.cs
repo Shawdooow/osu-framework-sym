@@ -17,7 +17,9 @@ namespace Sym.Networking.NetworkingClients
 {
     public class TcpNetworkingClient : NetworkingClient
     {
-        protected const int BUFFER_SIZE = 8192 * 2048;
+        public const int BUFFER_SIZE = 8192 * 256;
+
+        public const int TIMEOUT = 30000;
 
         public TcpClient TcpClient { get; protected set; }
 
@@ -25,7 +27,21 @@ namespace Sym.Networking.NetworkingClients
 
         public virtual NetworkStream NetworkStream => TcpClient.GetStream();
 
-        public override int Available => TcpClient?.Available ?? 0;
+        public override int Available
+        {
+            get
+            {
+                try
+                {
+                    return TcpClient?.Available ?? 0;
+                }
+                catch
+                {
+                    return 0;
+                }
+            }
+            
+        }
 
         public TcpNetworkingClient(string address)
             : base(address)
@@ -35,6 +51,7 @@ namespace Sym.Networking.NetworkingClients
                 TcpClient = new TcpClient();
                 TcpClient.Connect(EndPoint);
                 TcpClient.ReceiveBufferSize = BUFFER_SIZE;
+                TcpClient.ReceiveTimeout = TIMEOUT;
                 Logger.Log($"No exceptions while creating peer TcpClient with address {address}!", LoggingTarget.Runtime, LogLevel.Debug);
             }
             catch (Exception e)
@@ -67,6 +84,7 @@ namespace Sym.Networking.NetworkingClients
         {
             TcpClient = result.Result;
             TcpClient.SendBufferSize = BUFFER_SIZE;
+            TcpClient.SendTimeout = TIMEOUT;
             Logger.Log("TcpClient Connected!", LoggingTarget.Network);
         });
 

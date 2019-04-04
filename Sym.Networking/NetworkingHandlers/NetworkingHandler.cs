@@ -25,7 +25,7 @@ namespace Sym.Networking.NetworkingHandlers
         /// <summary>
         /// Only enabled when Tcp is set to true
         /// </summary>
-        protected TcpNetworkingClient TcpNetworkingClient { get; set; }
+        public TcpNetworkingClient TcpNetworkingClient { get; protected set; }
 
         /// <summary>
         /// TcpNetworkingClient's NetworkStream
