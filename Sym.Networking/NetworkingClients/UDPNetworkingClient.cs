@@ -41,7 +41,7 @@ namespace Sym.Networking.NetworkingClients
 
             try
             {
-                UdpClient = new UdpClient(port);
+                UdpClient = new UdpClient(EndPoint);
                 Logger.Log($"No exceptions while updating server UdpClient with port {port}", LoggingTarget.Runtime, LogLevel.Debug);
             }
             catch (Exception e)

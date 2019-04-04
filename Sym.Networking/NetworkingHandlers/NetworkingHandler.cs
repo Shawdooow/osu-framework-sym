@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net.Sockets;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Timing;
 using Sym.Networking.NetworkingClients;
@@ -19,30 +20,12 @@ namespace Sym.Networking.NetworkingHandlers
 
         protected virtual string Gamekey => null;
 
-        protected NetworkingClient NetworkingClient { get; set; }
+        protected UdpNetworkingClient UdpNetworkingClient { get; set; }
 
         /// <summary>
         /// Gets hit when we get + send a Packet
         /// </summary>
         public Action<PacketInfo> OnPacketReceive;
-
-        /// <summary>
-        /// TODO: Implement TCP connections
-        /// </summary>
-        public bool Tcp
-        {
-            get => tcp;
-            set
-            {
-                // ReSharper disable once RedundantCheckBeforeAssignment
-                if (value != tcp)
-                {
-                    tcp = value;
-                }
-            }
-        }
-
-        private bool tcp;
 
         /// <summary>
         /// Called when the address is changed

@@ -51,6 +51,11 @@ namespace Sym.Networking.NetworkingClients
             EndPoint = new IPEndPoint(IPAddress.Any, port);
         }
 
+        ~NetworkingClient()
+        {
+            Dispose();
+        }
+
         /// <summary>
         /// Send a packet
         /// </summary>

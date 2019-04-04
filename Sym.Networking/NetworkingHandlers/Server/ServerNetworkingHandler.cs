@@ -26,7 +26,7 @@ namespace Sym.Networking.NetworkingHandlers.Server
         {
             Client c = new Client
             {
-                EndPoint = new IPEndPoint(IPAddress.Parse(NetworkingClient.EndPoint.Address.ToString()), NetworkingClient.EndPoint.Port),
+                EndPoint = new IPEndPoint(IPAddress.Parse(UdpNetworkingClient.EndPoint.Address.ToString()), UdpNetworkingClient.EndPoint.Port),
                 LastConnectionTime = Time.Current,
                 Statues = ConnectionStatues.Connecting
             };
@@ -37,7 +37,13 @@ namespace Sym.Networking.NetworkingHandlers.Server
 
         #endregion
 
-        public ServerNetworkingHandler() => OnAddressChange += (ip, port) => { NetworkingClient = new UdpNetworkingClient(port); };
+        public ServerNetworkingHandler()
+        {
+            OnAddressChange += (ip, port) =>
+            {
+                UdpNetworkingClient = new UdpNetworkingClient(port);
+            };
+        }
 
         #region Update Loop
 
@@ -109,11 +115,11 @@ namespace Sym.Networking.NetworkingHandlers.Server
         protected override List<PacketInfo> ReceivePackets()
         {
             List<PacketInfo> packets = new List<PacketInfo>();
-            for (int i = 0; i < NetworkingClient?.Available; i++)
+            for (int i = 0; i < UdpNetworkingClient?.Available; i++)
             {
                 packets.Add(new ServerPacketInfo
                 {
-                    Packet = NetworkingClient.GetPacket(),
+                    Packet = UdpNetworkingClient.GetPacket(),
                     Client = GetLastClient(),
                 });
             }
@@ -128,7 +134,7 @@ namespace Sym.Networking.NetworkingHandlers.Server
         protected Client GetLastClient()
         {
             foreach (Client client in Clients)
-                if (client.EndPoint.ToString() == NetworkingClient.EndPoint.ToString())
+                if (client.EndPoint.ToString() == UdpNetworkingClient.EndPoint.ToString())
                     return client;
             return null;
         }
@@ -172,17 +178,17 @@ namespace Sym.Networking.NetworkingHandlers.Server
         {
             foreach (Client client in Clients)
                 if (client.Statues == ConnectionStatues.Connecting)
-                    NetworkingClient.SendPacket(SignPacket(packet), client.EndPoint);
+                    UdpNetworkingClient.SendPacket(SignPacket(packet), client.EndPoint);
         }
 
         protected void ShareWithAllConnectedClients(Packet packet)
         {
             foreach (Client client in Clients)
                 if (client.Statues == ConnectionStatues.Connected)
-                    NetworkingClient.SendPacket(SignPacket(packet), client.EndPoint);
+                    UdpNetworkingClient.SendPacket(SignPacket(packet), client.EndPoint);
         }
 
-        protected void ReturnToClient(Packet packet) => NetworkingClient.SendPacket(SignPacket(packet), GetLastClient().EndPoint);
+        protected void ReturnToClient(Packet packet) => UdpNetworkingClient.SendPacket(SignPacket(packet), GetLastClient().EndPoint);
 
         /// <summary>
         /// Test a clients connection
@@ -190,7 +196,7 @@ namespace Sym.Networking.NetworkingHandlers.Server
         protected virtual void TestConnection(Client client)
         {
             client.ConnectionTryCount++;
-            NetworkingClient.SendPacket(SignPacket(new TestPacket()), client.EndPoint);
+            UdpNetworkingClient.SendPacket(SignPacket(new TestPacket()), client.EndPoint);
         }
 
         #endregion
@@ -199,7 +205,7 @@ namespace Sym.Networking.NetworkingHandlers.Server
 
         public virtual void Close()
         {
-            if (NetworkingClient is UdpNetworkingClient udp)
+            if (UdpNetworkingClient is UdpNetworkingClient udp)
                 udp.UdpClient.Close();
         }
 

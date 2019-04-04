@@ -25,7 +25,10 @@ namespace Sym.Networking.NetworkingHandlers.Peer
 
         public PeerNetworkingHandler()
         {
-            OnAddressChange += (ip, port) => NetworkingClient = new UdpNetworkingClient(ip + ":" + port);
+            OnAddressChange += (ip, port) =>
+            {
+                UdpNetworkingClient = new UdpNetworkingClient(ip + ":" + port);
+            };
         }
 
         #region Update Loop
@@ -36,7 +39,7 @@ namespace Sym.Networking.NetworkingHandlers.Peer
         /// <param name="info"></param>
         protected override void HandlePackets(PacketInfo info)
         {
-            Logger.Log($"Recieved a Packet from {NetworkingClient.EndPoint}", LoggingTarget.Network, LogLevel.Debug);
+            Logger.Log($"Recieved a Packet from {UdpNetworkingClient.EndPoint}", LoggingTarget.Network, LogLevel.Debug);
 
             switch (info.Packet)
             {
@@ -63,10 +66,10 @@ namespace Sym.Networking.NetworkingHandlers.Peer
         protected override List<PacketInfo> ReceivePackets()
         {
             List<PacketInfo> packets = new List<PacketInfo>();
-            for (int i = 0; i < NetworkingClient?.Available; i++)
+            for (int i = 0; i < UdpNetworkingClient?.Available; i++)
                 packets.Add(new PeerPacketInfo
                 {
-                    Packet = NetworkingClient.GetPacket()
+                    Packet = UdpNetworkingClient.GetPacket()
                 });
             return packets;
         }
@@ -84,7 +87,7 @@ namespace Sym.Networking.NetworkingHandlers.Peer
 
         public virtual void SendToServer(Packet packet)
         {
-            NetworkingClient.SendPacket(SignPacket(packet));
+            UdpNetworkingClient.SendPacket(SignPacket(packet));
         }
 
         #endregion
@@ -99,7 +102,7 @@ namespace Sym.Networking.NetworkingHandlers.Peer
             // ReSharper disable once InvertIf
             if (true)//ConnectionStatues <= ConnectionStatues.Disconnected)
             {
-                Logger.Log($"Attempting to connect to {NetworkingClient.Address}", LoggingTarget.Network);
+                Logger.Log($"Attempting to connect to {UdpNetworkingClient.Address}", LoggingTarget.Network);
                 SendToServer(new ConnectPacket());
                 ConnectionStatues = ConnectionStatues.Connecting;
             }
