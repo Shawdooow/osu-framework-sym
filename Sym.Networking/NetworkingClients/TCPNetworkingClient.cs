@@ -17,7 +17,7 @@ namespace Sym.Networking.NetworkingClients
 {
     public class TcpNetworkingClient : NetworkingClient
     {
-        protected const int BUFFER_SIZE = 8192 * 2048;
+        public const int BUFFER_SIZE = 8192 * 256;
 
         public TcpClient TcpClient { get; protected set; }
 

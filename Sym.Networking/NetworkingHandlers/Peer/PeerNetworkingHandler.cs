@@ -49,6 +49,21 @@ namespace Sym.Networking.NetworkingHandlers.Peer
 
         #region Update Loop
 
+        public readonly List<byte[]> Pieces = new List<byte[]>();
+
+        protected override void Update()
+        {
+            base.Update();
+
+            if (Tcp && TcpNetworkingClient.Available > 0)
+            {
+                byte[] piece = new byte[TcpNetworkingClient.Available];
+                TcpNetworkStream.Read(piece, 0, piece.Length);
+                Pieces.Add(piece);
+            }
+
+        }
+
         /// <summary>
         /// Handle any packets we got before sending them to OnPackerReceive
         /// </summary>
