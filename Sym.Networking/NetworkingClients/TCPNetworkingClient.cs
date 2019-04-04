@@ -1,11 +1,14 @@
 ﻿#region usings
 
+#region usings
+
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 using osu.Framework.Logging;
-using Sym.Networking.Packets;
+
+#endregion
+
 #pragma warning disable 618
 
 #endregion
