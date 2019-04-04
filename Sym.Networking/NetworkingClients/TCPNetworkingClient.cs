@@ -3,8 +3,10 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using osu.Framework.Logging;
 using Sym.Networking.Packets;
+#pragma warning disable 618
 
 #endregion
 
@@ -12,9 +14,13 @@ namespace Sym.Networking.NetworkingClients
 {
     public class TcpNetworkingClient : NetworkingClient
     {
-        public readonly TcpClient TcpClient;
+        protected const int BUFFER_SIZE = 8192 * 2048;
 
-        public readonly NetworkStream NetworkStream;
+        public TcpClient TcpClient { get; protected set; }
+
+        public readonly TcpListener TcpListener;
+
+        public virtual NetworkStream NetworkStream => TcpClient.GetStream();
 
         public override int Available => TcpClient?.Available ?? 0;
 
@@ -25,7 +31,7 @@ namespace Sym.Networking.NetworkingClients
             {
                 TcpClient = new TcpClient();
                 TcpClient.Connect(EndPoint);
-                NetworkStream = TcpClient.GetStream();
+                TcpClient.ReceiveBufferSize = BUFFER_SIZE;
                 Logger.Log($"No exceptions while creating peer TcpClient with address {address}!", LoggingTarget.Runtime, LogLevel.Debug);
             }
             catch (Exception e)
@@ -43,16 +49,23 @@ namespace Sym.Networking.NetworkingClients
 
             try
             {
-                TcpClient = new TcpClient(EndPoint);
-                NetworkStream = TcpClient.GetStream();
-                Logger.Log($"No exceptions while updating server TcpClient with port {port}", LoggingTarget.Runtime, LogLevel.Debug);
+                TcpListener = new TcpListener(port);
+                TcpListener.Start();
+                Logger.Log($"No exceptions while updating server TcpListener with port {port}", LoggingTarget.Runtime, LogLevel.Debug);
             }
             catch (Exception e)
             {
-                Logger.Error(e, "Error while setting up a new Server TcpClient!");
+                Logger.Error(e, "Error while setting up a new Server TcpListener!");
                 Dispose();
             }
         }
+
+        public void AcceptClient() => TcpListener.AcceptTcpClientAsync().ContinueWith(result =>
+        {
+            TcpClient = result.Result;
+            TcpClient.SendBufferSize = BUFFER_SIZE;
+            Logger.Log("TcpClient Connected!", LoggingTarget.Network);
+        });
 
         public override void SendBytes(byte[] bytes, IPEndPoint end)
         {
@@ -78,6 +91,7 @@ namespace Sym.Networking.NetworkingClients
         {
             TcpClient?.Close();
             TcpClient?.Dispose();
+            TcpListener?.Stop();
         }
     }
 }

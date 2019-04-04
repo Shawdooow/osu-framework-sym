@@ -23,9 +23,42 @@ namespace Sym.Networking.NetworkingHandlers
         protected UdpNetworkingClient UdpNetworkingClient { get; set; }
 
         /// <summary>
+        /// Only enabled when Tcp is set to true
+        /// </summary>
+        protected TcpNetworkingClient TcpNetworkingClient { get; set; }
+
+        /// <summary>
+        /// TcpNetworkingClient's NetworkStream
+        /// </summary>
+        public virtual NetworkStream TcpNetworkStream => TcpNetworkingClient.NetworkStream;
+
+        /// <summary>
         /// Gets hit when we get + send a Packet
         /// </summary>
         public Action<PacketInfo> OnPacketReceive;
+
+        /// <summary>
+        /// Called when the Tcp option is changed
+        /// </summary>
+        public event Action<bool> OnTcpChange;
+
+        /// <summary>
+        /// TODO: Implement TCP connections
+        /// </summary>
+        public bool Tcp
+        {
+            get => tcp;
+            set
+            {
+                if (value != tcp)
+                {
+                    tcp = value;
+                    OnTcpChange?.Invoke(value);
+                }
+            }
+        }
+
+        private bool tcp;
 
         /// <summary>
         /// Called when the address is changed

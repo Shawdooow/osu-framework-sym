@@ -42,6 +42,19 @@ namespace Sym.Networking.NetworkingHandlers.Server
             OnAddressChange += (ip, port) =>
             {
                 UdpNetworkingClient = new UdpNetworkingClient(port);
+
+                if (Tcp)
+                    TcpNetworkingClient = new TcpNetworkingClient(Port);
+            };
+            OnTcpChange += value =>
+            {
+                if (value)
+                    TcpNetworkingClient = new TcpNetworkingClient(Port);
+                else
+                {
+                   TcpNetworkingClient.Dispose();
+                   TcpNetworkingClient = null;
+                }
             };
         }
 
@@ -83,6 +96,9 @@ namespace Sym.Networking.NetworkingHandlers.Server
                         break;
                     }
                     Logger.Log("Recieved a test packet from a client we have never seen!", LoggingTarget.Network, LogLevel.Error);
+                    break;
+                case TcpPacket tcp:
+                    TcpNetworkingClient.AcceptClient();
                     break;
             }
         }

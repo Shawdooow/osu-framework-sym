@@ -28,6 +28,22 @@ namespace Sym.Networking.NetworkingHandlers.Peer
             OnAddressChange += (ip, port) =>
             {
                 UdpNetworkingClient = new UdpNetworkingClient(ip + ":" + port);
+
+                if (Tcp)
+                    TcpNetworkingClient = new TcpNetworkingClient(ip + ":" + port);
+            };
+            OnTcpChange += value =>
+            {
+                if (value)
+                {
+                    TcpNetworkingClient = new TcpNetworkingClient(IP + ":" + Port);
+                    SendToServer(new TcpPacket());
+                }
+                else
+                {
+                    TcpNetworkingClient.Dispose();
+                    TcpNetworkingClient = null;
+                }
             };
         }
 
