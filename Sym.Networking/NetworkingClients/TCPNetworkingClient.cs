@@ -23,7 +23,7 @@ namespace Sym.Networking.NetworkingClients
     {
         public const int BUFFER_SIZE = 8192 * 256;
 
-        public const int PACKET_SIZE = BUFFER_SIZE / 32;
+        public const int PACKET_SIZE = BUFFER_SIZE / 16;
 
         public const int TIMEOUT = 60000;
 
@@ -60,7 +60,7 @@ namespace Sym.Networking.NetworkingClients
                 TcpClient = new TcpClient();
                 TcpClient.Connect(EndPoint);
                 TcpClient.ReceiveBufferSize = BUFFER_SIZE;
-                TcpClient.SendBufferSize = BUFFER_SIZE / 8;
+                TcpClient.SendBufferSize = BUFFER_SIZE / 4;
                 TcpClient.ReceiveTimeout = TIMEOUT;
                 TcpClient.SendTimeout = TIMEOUT / 2;
                 Logger.Log($"No exceptions while creating peer TcpClient with address {address}!", LoggingTarget.Runtime, LogLevel.Debug);
@@ -96,8 +96,8 @@ namespace Sym.Networking.NetworkingClients
             TcpClient c = result.Result;
             TcpClients.Add(c);
 
-            c.ReceiveBufferSize = BUFFER_SIZE / 8;
-            c.SendBufferSize = BUFFER_SIZE / 8;
+            c.ReceiveBufferSize = BUFFER_SIZE / 2;
+            c.SendBufferSize = BUFFER_SIZE / 4;
             c.ReceiveTimeout = TIMEOUT;
             c.SendTimeout = TIMEOUT  / 2;
 
