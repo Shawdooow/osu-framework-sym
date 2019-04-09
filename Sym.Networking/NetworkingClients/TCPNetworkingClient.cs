@@ -133,22 +133,10 @@ namespace Sym.Networking.NetworkingClients
 
                 BinaryFormatter formatter = new BinaryFormatter();
 
-                try
-                {
-                    if (formatter.Deserialize(stream) is Packet packet)
-                        return packet;
+                if (formatter.Deserialize(stream) is Packet packet)
+                    return packet;
 
-                    throw new NullReferenceException("Whatever we recieved isnt a packet!");
-                }
-                catch (Exception e)
-                {
-                    Logger.Error(e, "Deserialization of a packet failed!", LoggingTarget.Network);
-
-                    byte[] clean = new byte[Available % PACKET_SIZE];
-                    NetworkStream.Read(clean, 0, clean.Length);
-                }
-
-                return null;
+                throw new NullReferenceException("Whatever we recieved isnt a packet!");
             }
         }
 

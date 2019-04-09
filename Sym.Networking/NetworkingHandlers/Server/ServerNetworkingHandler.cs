@@ -132,10 +132,8 @@ namespace Sym.Networking.NetworkingHandlers.Server
         {
             List<PacketInfo<T>> packets = new List<PacketInfo<T>>();
             foreach (T peer in Peers)
-            {
-                if (peer.TcpClient.Available > 0)
+                if (peer.TcpClient.Available > TcpNetworkingClient.PACKET_SIZE)
                     packets.Add(new PacketInfo<T>(peer, TcpNetworkingClient.GetPacket(peer.TcpClient)));
-            }
 
             return packets;
         }
