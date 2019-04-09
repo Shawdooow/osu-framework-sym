@@ -23,7 +23,7 @@ namespace Sym.Networking.NetworkingClients
     {
         public const int BUFFER_SIZE = 8192 * 256;
 
-        public virtual int PACKET_SIZE => BUFFER_SIZE / 16;
+        public static int PACKET_SIZE => BUFFER_SIZE / 16;
 
         public const int TIMEOUT = 10000;
 
