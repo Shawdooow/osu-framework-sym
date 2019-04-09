@@ -1,5 +1,9 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Runtime.Serialization;
+
+#endregion
 
 namespace Sym.Networking.Packets
 {

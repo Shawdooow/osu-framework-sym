@@ -7,7 +7,6 @@
 using System.Net;
 using System.Net.Sockets;
 using osu.Framework.Logging;
-using Sym.Networking.NetworkingClients;
 
 #endregion
 

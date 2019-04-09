@@ -2,7 +2,6 @@
 
 using System;
 using System.Net;
-using osu.Framework.Logging;
 using Sym.Networking.Packets;
 
 #endregion
