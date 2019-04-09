@@ -2,7 +2,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Net.Sockets;
+using System.Net;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Timing;
 using Sym.Networking.NetworkingClients;
@@ -14,51 +14,18 @@ using Sym.Networking.Packets;
 
 namespace Sym.Networking.NetworkingHandlers
 {
-    public abstract class NetworkingHandler : Container
+    public abstract class NetworkingHandler<T> : Container
+        where T : Client
     {
         #region Fields
 
         protected virtual string Gamekey => null;
 
+        protected abstract T GetClient(IPEndPoint end);
+
+        protected TcpNetworkingClient TcpNetworkingClient { get; set; }
+
         protected UdpNetworkingClient UdpNetworkingClient { get; set; }
-
-        /// <summary>
-        /// Only enabled when Tcp is set to true
-        /// </summary>
-        public TcpNetworkingClient TcpNetworkingClient { get; protected set; }
-
-        /// <summary>
-        /// TcpNetworkingClient's NetworkStream
-        /// </summary>
-        public virtual NetworkStream TcpNetworkStream => TcpNetworkingClient.NetworkStream;
-
-        /// <summary>
-        /// Gets hit when we get + send a Packet
-        /// </summary>
-        public Action<PacketInfo> OnPacketReceive;
-
-        /// <summary>
-        /// Called when the Tcp option is changed
-        /// </summary>
-        public event Action<bool> OnTcpChange;
-
-        /// <summary>
-        /// TODO: Implement TCP connections
-        /// </summary>
-        public bool Tcp
-        {
-            get => tcp;
-            set
-            {
-                if (value != tcp)
-                {
-                    tcp = value;
-                    OnTcpChange?.Invoke(value);
-                }
-            }
-        }
-
-        private bool tcp;
 
         /// <summary>
         /// Called when the address is changed
@@ -133,6 +100,29 @@ namespace Sym.Networking.NetworkingHandlers
 
         private int port;
 
+        /// <summary>
+        /// Called when the Udp option is changed
+        /// </summary>
+        public event Action<bool> OnUdpChange;
+
+        /// <summary>
+        /// Enables Udp
+        /// </summary>
+        public bool Udp
+        {
+            get => udp;
+            set
+            {
+                if (value != udp)
+                {
+                    udp = value;
+                    OnUdpChange?.Invoke(value);
+                }
+            }
+        }
+
+        private bool udp;
+
         #endregion
 
         protected NetworkingHandler()
@@ -150,15 +140,15 @@ namespace Sym.Networking.NetworkingHandlers
         {
             base.Update();
 
-            foreach (PacketInfo p in ReceivePackets())
-                HandlePackets(p);
+            foreach (PacketInfo<T> p in GetPackets())
+                PacketReceived(p);
         }
 
         /// <summary>
         /// Handle any packets we got before sending them to OnPackerReceive
         /// </summary>
         /// <param name="packet"></param>
-        protected virtual void HandlePackets(PacketInfo packet) => OnPacketReceive?.Invoke(packet);
+        protected abstract void PacketReceived(PacketInfo<T> packet);
 
         #endregion
 
@@ -168,7 +158,7 @@ namespace Sym.Networking.NetworkingHandlers
         /// returns a list of all avalable packets
         /// </summary>
         /// <returns></returns>
-        protected abstract List<PacketInfo> ReceivePackets();
+        protected abstract List<PacketInfo<T>> GetPackets();
 
         /// <summary>
         /// Signs this packet so everyone knows where it came from

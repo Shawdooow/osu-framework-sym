@@ -13,7 +13,7 @@ namespace Sym.Networking.NetworkingClients
 {
     public class UdpNetworkingClient : NetworkingClient
     {
-        public readonly UdpClient UdpClient;
+        protected readonly UdpClient UdpClient;
 
         public override int Available => UdpClient?.Available ?? 0;
 
@@ -36,9 +36,6 @@ namespace Sym.Networking.NetworkingClients
         public UdpNetworkingClient(int port)
             : base(port)
         {
-            if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
-                Logger.Log("No Network Connection Detected!", LoggingTarget.Network, LogLevel.Error);
-
             try
             {
                 UdpClient = new UdpClient(EndPoint);

@@ -27,8 +27,7 @@ namespace Sym.Networking.NetworkingClients
 
         protected NetworkingClient(string address)
         {
-            if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
-                Logger.Log("No Network Connection Detected!", LoggingTarget.Network, LogLevel.Error);
+            if (!NetworkChecks()) return;
 
             Address = address;
 
@@ -44,8 +43,7 @@ namespace Sym.Networking.NetworkingClients
 
         protected NetworkingClient(int port)
         {
-            if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
-                Logger.Log("No Network Connection Detected!", LoggingTarget.Network, LogLevel.Error);
+            if (!NetworkChecks()) return;
 
             Port = port;
             EndPoint = new IPEndPoint(IPAddress.Any, port);
@@ -56,10 +54,21 @@ namespace Sym.Networking.NetworkingClients
             Dispose();
         }
 
+        protected virtual bool NetworkChecks()
+        {
+            if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
+            {
+                Logger.Log("No Network Connection Detected!", LoggingTarget.Network, LogLevel.Error);
+                return false;
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Send a packet
         /// </summary>
-        /// <param name="packet"></param>
+        /// <param name="t"></param>
         /// <param name="end"></param>
         public virtual void SendPacket(Packet packet, IPEndPoint end = null)
         {

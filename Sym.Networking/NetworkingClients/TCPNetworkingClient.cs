@@ -3,9 +3,13 @@
 #region usings
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.Serialization.Formatters.Binary;
 using osu.Framework.Logging;
+using Sym.Networking.Packets;
 
 #endregion
 
@@ -19,13 +23,19 @@ namespace Sym.Networking.NetworkingClients
     {
         public const int BUFFER_SIZE = 8192 * 256;
 
-        public const int TIMEOUT = 30000;
+        public virtual int PACKET_SIZE => BUFFER_SIZE / 16;
 
-        public TcpClient TcpClient { get; protected set; }
+        public const int TIMEOUT = 10000;
 
-        public readonly TcpListener TcpListener;
+        protected readonly TcpClient TcpClient;
 
-        public virtual NetworkStream NetworkStream => TcpClient.GetStream();
+        protected internal NetworkStream NetworkStream => TcpClient.GetStream();
+
+        protected readonly TcpListener TcpListener;
+
+        protected internal readonly List<TcpClient> TcpClients = new List<TcpClient>();
+
+        public Action<TcpClient> OnClientConnected;
 
         public override int Available
         {
@@ -40,7 +50,6 @@ namespace Sym.Networking.NetworkingClients
                     return 0;
                 }
             }
-            
         }
 
         public TcpNetworkingClient(string address)
@@ -64,13 +73,11 @@ namespace Sym.Networking.NetworkingClients
         public TcpNetworkingClient(int port)
             : base(port)
         {
-            if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
-                Logger.Log("No Network Connection Detected!", LoggingTarget.Network, LogLevel.Error);
-
             try
             {
                 TcpListener = new TcpListener(port);
                 TcpListener.Start();
+                AcceptClient();
                 Logger.Log($"No exceptions while updating server TcpListener with port {port}", LoggingTarget.Runtime, LogLevel.Debug);
             }
             catch (Exception e)
@@ -82,37 +89,101 @@ namespace Sym.Networking.NetworkingClients
 
         public void AcceptClient() => TcpListener.AcceptTcpClientAsync().ContinueWith(result =>
         {
-            TcpClient = result.Result;
-            TcpClient.SendBufferSize = BUFFER_SIZE;
-            TcpClient.SendTimeout = TIMEOUT;
-            Logger.Log("TcpClient Connected!", LoggingTarget.Network);
+            TcpClient client = result.Result;
+            TcpClients.Add(client);
+            client.SendBufferSize = BUFFER_SIZE;
+            client.SendTimeout = TIMEOUT;
+            OnClientConnected?.Invoke(client);
+            AcceptClient();
         });
+
+        public override void SendPacket(Packet packet, IPEndPoint end = null)
+        {
+            using (MemoryStream stream = new MemoryStream())
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+                formatter.Serialize(stream, packet);
+
+                stream.Position = 0;
+
+                byte[] data = new byte[PACKET_SIZE];
+
+                stream.Read(data, 0, PACKET_SIZE);
+
+                SendBytes(data, end);
+            }
+        }
+
+        /// <summary>
+        /// Receive a packet
+        /// </summary>
+        /// <returns></returns>
+        public virtual Packet GetPacket(TcpClient client)
+        {
+            this.client = client;
+            return GetPacket();
+        }
 
         public override void SendBytes(byte[] bytes, IPEndPoint end)
         {
-            if (end != null) throw new InvalidOperationException("Blame TCP for sucking");
-
-            if (!TcpClient.Client.Connected)
+            if (end != null)
             {
-                Logger.Log($"TcpClient is not connected to {TcpClient.Client.RemoteEndPoint}!", LoggingTarget.Network, LogLevel.Error);
-                return;
+                foreach (TcpClient client in TcpClients)
+                    if (client.Client.LocalEndPoint.ToString() == end.ToString())
+                    {
+                        send(client.GetStream(), bytes);
+                        break;
+                    }
+            }
+            else
+            {
+                if (!TcpClient.Client.Connected)
+                {
+                    Logger.Log($"TcpClient is not connected to {EndPoint.Address}!", LoggingTarget.Network, LogLevel.Error);
+                    return;
+                }
+
+                send(NetworkStream, bytes);
             }
 
-            try
+            void send(NetworkStream stream, byte[] data)
             {
-                NetworkStream.Write(bytes, 0, bytes.Length);
-                Logger.Log($"No exceptions while sending bytes to {TcpClient.Client.RemoteEndPoint}", LoggingTarget.Runtime, LogLevel.Debug);
+                try
+                {
+                    stream.Write(data, 0, PACKET_SIZE);
+                    Logger.Log($"No exceptions while sending bytes to {EndPoint.Address}", LoggingTarget.Runtime, LogLevel.Debug);
+                }
+                catch (Exception e)
+                {
+                    Logger.Error(e, "Error sending bytes!");
+                }
             }
-            catch (Exception e) { Logger.Error(e, "Error sending bytes!"); }
         }
 
-        public override byte[] GetBytes() => null;//Available > 0 ? NetworkStream.Read() : null;
+        private TcpClient client;
+
+        public override byte[] GetBytes()
+        {
+            if (client == null) client = TcpClient;
+
+            byte[] data = new byte[PACKET_SIZE];
+            client.GetStream().Read(data, 0, data.Length);
+
+            client = null;
+
+            return data;
+        }
 
         public override void Dispose()
         {
             TcpClient?.Close();
             TcpClient?.Dispose();
             TcpListener?.Stop();
+            foreach (TcpClient client in TcpClients)
+            {
+                client.Close();
+                client.Dispose();
+            }
         }
     }
 }

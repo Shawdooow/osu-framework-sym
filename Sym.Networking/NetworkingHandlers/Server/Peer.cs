@@ -1,13 +1,19 @@
 ﻿#region usings
 
+#endregion
+
+#region usings
+
 using System.Net;
+using System.Net.Sockets;
 using osu.Framework.Logging;
+using Sym.Networking.NetworkingClients;
 
 #endregion
 
-namespace Sym.Networking.NetworkingHandlers.Peer
+namespace Sym.Networking.NetworkingHandlers.Server
 {
-    public class Host : Client
+    public class Peer : Client
     {
         public override ConnectionStatues Statues
         {
@@ -17,23 +23,25 @@ namespace Sym.Networking.NetworkingHandlers.Peer
                 if (base.Statues != value)
                 {
                     base.Statues = value;
-                    switch (value)
+                    switch (base.Statues)
                     {
                         case ConnectionStatues.Connecting:
-                            Logger.Log($"Connecting to Host {EndPoint.Address}...", LoggingTarget.Network);
+                            Logger.Log($"Peer {EndPoint.Address} is connecting!", LoggingTarget.Network);
                             break;
                         case ConnectionStatues.Connected:
-                            Logger.Log($"Connected to Host {EndPoint.Address}!", LoggingTarget.Network);
+                            Logger.Log($"Peer {EndPoint.Address} is connected!", LoggingTarget.Network);
                             break;
                         case ConnectionStatues.Disconnected:
-                            Logger.Log($"Disconnected from Host {EndPoint.Address}s", LoggingTarget.Network);
+                            Logger.Log($"Peer {EndPoint.Address} has lost connection!", LoggingTarget.Network);
                             break;
                     }
                 }
             }
         }
 
-        public Host(IPEndPoint end)
+        protected internal TcpClient TcpClient { get; internal set; }
+
+        public Peer(IPEndPoint end)
             : base(end)
         {
         }

@@ -1,5 +1,6 @@
 ﻿#region usings
 
+using System;
 using System.Collections.Generic;
 using System.Net;
 using osu.Framework.Logging;
@@ -10,50 +11,57 @@ using Sym.Networking.Packets;
 
 namespace Sym.Networking.NetworkingHandlers.Server
 {
-    public class ServerNetworkingHandler: NetworkingHandler
+    public class ServerNetworkingHandler : ServerNetworkingHandler<Peer>
+    {
+        protected override Peer GetClient(IPEndPoint end) => new Peer(end);
+    }
+
+    public abstract class ServerNetworkingHandler<T> : NetworkingHandler<T>
+        where T : Peer
     {
         #region Fields
 
-        //30 Seconds by default
-        protected virtual double TimeOutTime => 60000;
+        protected virtual double TimeOutTime => 30000;
 
         /// <summary>
-        /// All Connecting clients / clients losing connection
+        /// Call this when we connect to a Host
         /// </summary>
-        public readonly List<Client> Clients = new List<Client>();
+        public Action<Peer> OnPeerConnected;
 
-        protected virtual Client CreateConnectingClient(ConnectPacket connectPacket)
-        {
-            Client c = new Client
-            {
-                EndPoint = new IPEndPoint(IPAddress.Parse(UdpNetworkingClient.EndPoint.Address.ToString()), UdpNetworkingClient.EndPoint.Port),
-                LastConnectionTime = Time.Current,
-                Statues = ConnectionStatues.Connecting
-            };
-            c.OnDisconnected += () => Clients.Remove(c);
-
-            return c;
-        }
+        /// <summary>
+        /// All Connecting peers / peers losing connection
+        /// </summary>
+        public readonly List<T> Peers = new List<T>();
 
         #endregion
 
-        public ServerNetworkingHandler()
+        protected ServerNetworkingHandler()
         {
             OnAddressChange += (ip, port) =>
             {
-                UdpNetworkingClient = new UdpNetworkingClient(port);
+                if (Udp)
+                    UdpNetworkingClient = new UdpNetworkingClient(port);
 
-                if (Tcp)
-                    TcpNetworkingClient = new TcpNetworkingClient(Port);
+                TcpNetworkingClient = new TcpNetworkingClient(Port);
+                TcpNetworkingClient.OnClientConnected += value =>
+                {
+                    string[] address = value.Client.LocalEndPoint.ToString().Split(':');
+
+                    T t = GetClient(new IPEndPoint(IPAddress.Parse(address[0]), int.Parse(address[1])));
+
+                    t.TcpClient = value;
+                    Peers.Add(t);
+                    OnPeerConnected?.Invoke(t);
+                };
             };
-            OnTcpChange += value =>
+            OnUdpChange += value =>
             {
                 if (value)
-                    TcpNetworkingClient = new TcpNetworkingClient(Port);
+                    UdpNetworkingClient = new UdpNetworkingClient(Port);
                 else
                 {
-                   TcpNetworkingClient.Dispose();
-                   TcpNetworkingClient = null;
+                    UdpNetworkingClient.Dispose();
+                    UdpNetworkingClient = null;
                 }
             };
         }
@@ -71,54 +79,46 @@ namespace Sym.Networking.NetworkingHandlers.Server
         /// Handle any packets we got before sending them to OnPackerReceive
         /// </summary>
         /// <param name="info"></param>
-        protected override void HandlePackets(PacketInfo info)
+        protected override void PacketReceived(PacketInfo<T> info)
         {
-            base.HandlePackets(info);
-
-            ServerPacketInfo serverInfo = (ServerPacketInfo)info;
-
             switch (info.Packet)
             {
                 case ConnectPacket connectPacket:
-                    serverInfo.Client = CreateConnectingClient(connectPacket);
-                    Clients.Add(serverInfo.Client);
-                    ReturnToClient(new ConnectedPacket());
+                    Peers.Add(info.Client);
+                    SendToPeer(new ConnectedPacket(), info.Client);
                     break;
                 case DisconnectPacket disconnectPacket:
-                    ClientDisconnecting(serverInfo);
+                    ClientDisconnecting(info);
                     break;
                 case TestPacket testPacket:
-                    if (serverInfo.Client != null)
+                    if (info.Client != null)
                     {
-                        serverInfo.Client.LastConnectionTime = Time.Current;
-                        serverInfo.Client.ConnectionTryCount = 0;
-                        serverInfo.Client.Statues = ConnectionStatues.Connected;
+                        info.Client.LastConnectionTime = Time.Current;
+                        info.Client.ConnectionTryCount = 0;
+                        info.Client.Statues = ConnectionStatues.Connected;
                         break;
                     }
                     Logger.Log("Recieved a test packet from a client we have never seen!", LoggingTarget.Network, LogLevel.Error);
-                    break;
-                case TcpPacket tcp:
-                    TcpNetworkingClient.AcceptClient();
                     break;
             }
         }
 
         protected virtual void CheckClients()
         {
-            foreach (Client client in Clients)
+            foreach (T t in Peers)
             {
-                if (client.LastConnectionTime + TimeOutTime / 6 <= Time.Current && client.ConnectionTryCount == 0)
-                    TestConnection(client);
+                if (t.LastConnectionTime + TimeOutTime / 6 <= Time.Current && t.ConnectionTryCount == 0)
+                    TestConnection(t);
 
-                if (client.LastConnectionTime + TimeOutTime / 3 <= Time.Current && client.ConnectionTryCount == 1)
-                    TestConnection(client);
+                if (t.LastConnectionTime + TimeOutTime / 3 <= Time.Current && t.ConnectionTryCount == 1)
+                    TestConnection(t);
 
-                if (client.LastConnectionTime + TimeOutTime / 2 <= Time.Current && client.ConnectionTryCount == 2)
-                    TestConnection(client);
+                if (t.LastConnectionTime + TimeOutTime / 2 <= Time.Current && t.ConnectionTryCount == 2)
+                    TestConnection(t);
 
-                if (client.LastConnectionTime + TimeOutTime <= Time.Current)
+                if (t.LastConnectionTime + TimeOutTime <= Time.Current)
                 {
-                    client.Statues = ConnectionStatues.Disconnected;
+                    t.Statues = ConnectionStatues.Disconnected;
                     break;
                 }
             }
@@ -128,31 +128,16 @@ namespace Sym.Networking.NetworkingHandlers.Server
 
         #region Packet and Client Helper Functions
 
-        protected override List<PacketInfo> ReceivePackets()
+        protected override List<PacketInfo<T>> GetPackets()
         {
-            List<PacketInfo> packets = new List<PacketInfo>();
-            for (int i = 0; i < UdpNetworkingClient?.Available; i++)
+            List<PacketInfo<T>> packets = new List<PacketInfo<T>>();
+            foreach (T peer in Peers)
             {
-                packets.Add(new ServerPacketInfo
-                {
-                    Packet = UdpNetworkingClient.GetPacket(),
-                    Client = GetLastClient(),
-                });
+                if (peer.TcpClient.Available > 0)
+                    packets.Add(new PacketInfo<T>(peer, TcpNetworkingClient.GetPacket(peer.TcpClient)));
             }
 
             return packets;
-        }
-
-        /// <summary>
-        /// Get a matching client from currently connecting/connected clients
-        /// </summary>
-        /// <returns></returns>
-        protected Client GetLastClient()
-        {
-            foreach (Client client in Clients)
-                if (client.EndPoint.ToString() == UdpNetworkingClient.EndPoint.ToString())
-                    return client;
-            return null;
         }
 
         protected override Packet SignPacket(Packet packet)
@@ -166,23 +151,13 @@ namespace Sym.Networking.NetworkingHandlers.Server
         /// Called to remove a client that is disconnecting
         /// </summary>
         /// <param name="info"></param>
-        protected void ClientDisconnecting(ServerPacketInfo info) => info.Client.Statues = ConnectionStatues.Disconnected;
-
-        protected virtual bool HandlePacket(Packet packet)
-        {
-            if (GetLastClient() != null)
-                return true;
-
-            if (packet is ConnectPacket c && c.Gamekey == Gamekey)
-                return true;
-
-            Logger.Log("This is not a packet we should handle!", LoggingTarget.Network, LogLevel.Debug);
-            return false;
-        }
+        protected void ClientDisconnecting(PacketInfo<T> info) => info.Client.Statues = ConnectionStatues.Disconnected;
 
         #endregion
 
         #region Send Functions
+
+        protected virtual void SendToPeer(Packet packet, T t) => TcpNetworkingClient.SendPacket(packet, t.EndPoint);
 
         protected void ShareWithAllClients(Packet packet)
         {
@@ -192,19 +167,17 @@ namespace Sym.Networking.NetworkingHandlers.Server
 
         protected void ShareWithAllConnectingClients(Packet packet)
         {
-            foreach (Client client in Clients)
-                if (client.Statues == ConnectionStatues.Connecting)
-                    UdpNetworkingClient.SendPacket(SignPacket(packet), client.EndPoint);
+            foreach (T t in Peers)
+                if (t.Statues == ConnectionStatues.Connecting)
+                    TcpNetworkingClient.SendPacket(SignPacket(packet), t.EndPoint);
         }
 
         protected void ShareWithAllConnectedClients(Packet packet)
         {
-            foreach (Client client in Clients)
-                if (client.Statues == ConnectionStatues.Connected)
-                    UdpNetworkingClient.SendPacket(SignPacket(packet), client.EndPoint);
+            foreach (T t in Peers)
+                if (t.Statues == ConnectionStatues.Connected)
+                    TcpNetworkingClient.SendPacket(SignPacket(packet), t.EndPoint);
         }
-
-        protected void ReturnToClient(Packet packet) => UdpNetworkingClient.SendPacket(SignPacket(packet), GetLastClient().EndPoint);
 
         /// <summary>
         /// Test a clients connection
@@ -212,17 +185,7 @@ namespace Sym.Networking.NetworkingHandlers.Server
         protected virtual void TestConnection(Client client)
         {
             client.ConnectionTryCount++;
-            UdpNetworkingClient.SendPacket(SignPacket(new TestPacket()), client.EndPoint);
-        }
-
-        #endregion
-
-        #region Network Actions
-
-        public virtual void Close()
-        {
-            if (UdpNetworkingClient is UdpNetworkingClient udp)
-                udp.UdpClient.Close();
+            TcpNetworkingClient.SendPacket(SignPacket(new TestPacket()), client.EndPoint);
         }
 
         #endregion
@@ -230,7 +193,6 @@ namespace Sym.Networking.NetworkingHandlers.Server
         protected override void Dispose(bool isDisposing)
         {
             ShareWithAllClients(new ServerClosingPacket());
-            Close();
             base.Dispose(isDisposing);
         }
     }

@@ -3,25 +3,29 @@
 using System;
 using System.Net;
 using osu.Framework.Logging;
+using Sym.Networking.Packets;
 
 #endregion
 
 // ReSharper disable InconsistentNaming
 
-namespace Sym.Networking.NetworkingHandlers.Server
+namespace Sym.Networking.NetworkingHandlers
 {
-    public class Client
+    public abstract class Client
     {
-        public IPEndPoint EndPoint { get; set; }
+        public readonly IPEndPoint EndPoint;
 
-        public int ID { get; set; }
+        /// <summary>
+        /// Gets hit when we get a Packet
+        /// </summary>
+        public Action<Packet> OnPacketReceive;
 
         /// <summary>
         /// Last successful ping to this client
         /// </summary>
         public double Ping { get; set; }
 
-        public ConnectionStatues Statues
+        public virtual ConnectionStatues Statues
         {
             get => statues;
             set
@@ -33,20 +37,19 @@ namespace Sym.Networking.NetworkingHandlers.Server
                     {
                         case ConnectionStatues.Connecting:
                             OnConnecting?.Invoke();
-                            Logger.Log($"Client {EndPoint.Address} is connecting!", LoggingTarget.Network);
                             break;
                         case ConnectionStatues.Connected:
                             OnConnected?.Invoke();
-                            Logger.Log($"Client {EndPoint.Address} has connected!", LoggingTarget.Network);
                             break;
                         case ConnectionStatues.Disconnected:
                             OnDisconnected?.Invoke();
-                            Logger.Log($"Client {EndPoint.Address} has lost connection!", LoggingTarget.Network);
                             break;
                     }
                 }
             }
         }
+
+        private ConnectionStatues statues;
 
         public event Action OnConnecting;
 
@@ -54,10 +57,10 @@ namespace Sym.Networking.NetworkingHandlers.Server
 
         public event Action OnDisconnected;
 
-        private ConnectionStatues statues;
-
         public int ConnectionTryCount { get; set; }
 
         public double LastConnectionTime { get; set; }
+
+        protected Client(IPEndPoint end) => EndPoint = end;
     }
 }

@@ -20,7 +20,7 @@ namespace Sym.Networking.Containers
 
         protected virtual void SendPacket(Packet packet) => PeerNetworkingHandler.SendToServer(packet);
 
-        protected virtual void OnPacketRecieve(PacketInfo info)
+        protected virtual void OnPacketRecieve(PacketInfo<Host> info)
         {
         }
 

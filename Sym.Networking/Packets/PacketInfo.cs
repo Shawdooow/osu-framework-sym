@@ -1,7 +1,22 @@
-﻿namespace Sym.Networking.Packets
+﻿#region usings
+
+using Sym.Networking.NetworkingHandlers;
+
+#endregion
+
+namespace Sym.Networking.Packets
 {
-    public abstract class PacketInfo
+    public class PacketInfo<T>
+        where T : Client
     {
-        public Packet Packet;
+        public readonly T Client;
+
+        public readonly Packet Packet;
+
+        public PacketInfo(T client, Packet packet)
+        {
+            Client = client;
+            Packet = packet;
+        }
     }
 }
