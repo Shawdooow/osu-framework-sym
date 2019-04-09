@@ -93,7 +93,7 @@ namespace Sym.Networking.NetworkingHandlers.Peer
         protected override List<PacketInfo<T>> GetPackets()
         {
             List<PacketInfo<T>> packets = new List<PacketInfo<T>>();
-            for (int i = 0; i < TcpNetworkingClient?.Available; i++)
+            for (int i = 0; i <= TcpNetworkingClient?.Available - TcpNetworkingClient.PACKET_SIZE; i += TcpNetworkingClient.PACKET_SIZE)
                 packets.Add(new PacketInfo<T>(Host, TcpNetworkingClient.GetPacket()));
             return packets;
         }

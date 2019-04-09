@@ -21,7 +21,7 @@ namespace Sym.Networking.NetworkingHandlers.Server
     {
         #region Fields
 
-        protected virtual double TimeOutTime => 30000;
+        protected virtual double TimeOutTime => 60000;
 
         /// <summary>
         /// Call this when we connect to a Host

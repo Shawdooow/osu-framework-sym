@@ -25,7 +25,7 @@ namespace Sym.Networking.NetworkingClients
 
         public static int PACKET_SIZE => BUFFER_SIZE / 16;
 
-        public const int TIMEOUT = 10000;
+        public const int TIMEOUT = 60000;
 
         protected readonly TcpClient TcpClient;
 
@@ -124,9 +124,35 @@ namespace Sym.Networking.NetworkingClients
         /// <returns></returns>
         public virtual Packet GetPacket(TcpClient client)
         {
-            this.client = client;
-            return GetPacket();
+            using (MemoryStream stream = new MemoryStream())
+            {
+                byte[] data = GetBytes(client);
+                stream.Write(data, 0, data.Length);
+
+                stream.Position = 0;
+
+                BinaryFormatter formatter = new BinaryFormatter();
+
+                try
+                {
+                    if (formatter.Deserialize(stream) is Packet packet)
+                        return packet;
+
+                    throw new NullReferenceException("Whatever we recieved isnt a packet!");
+                }
+                catch (Exception e)
+                {
+                    Logger.Error(e, "Deserialization of a packet failed!", LoggingTarget.Network);
+
+                    byte[] clean = new byte[Available % PACKET_SIZE];
+                    NetworkStream.Read(clean, 0, clean.Length);
+                }
+
+                return null;
+            }
         }
+
+        public override Packet GetPacket() => GetPacket(TcpClient);
 
         public override void SendBytes(byte[] bytes, IPEndPoint end)
         {
@@ -166,16 +192,12 @@ namespace Sym.Networking.NetworkingClients
             }
         }
 
-        private TcpClient client;
+        public override byte[] GetBytes() => GetBytes(TcpClient);
 
-        public override byte[] GetBytes()
+        public virtual byte[] GetBytes(TcpClient client)
         {
-            if (client == null) client = TcpClient;
-
             byte[] data = new byte[PACKET_SIZE];
-            client.GetStream().Read(data, 0, data.Length);
-
-            client = null;
+            client.GetStream().Read(data, 0, PACKET_SIZE);
 
             return data;
         }
