@@ -89,10 +89,14 @@ namespace Sym.Networking.NetworkingClients
 
         public void AcceptClient() => TcpListener.AcceptTcpClientAsync().ContinueWith(result =>
         {
+            if (Disposed) return;
+
             TcpClient c = result.Result;
             TcpClients.Add(c);
+
             c.SendBufferSize = BUFFER_SIZE;
             c.SendTimeout = TIMEOUT;
+
             OnClientConnected?.Invoke(c);
             AcceptClient();
         });
@@ -178,6 +182,7 @@ namespace Sym.Networking.NetworkingClients
 
         public override void Dispose()
         {
+            base.Dispose();
             TcpClient?.Close();
             TcpClient?.Dispose();
             TcpListener?.Stop();

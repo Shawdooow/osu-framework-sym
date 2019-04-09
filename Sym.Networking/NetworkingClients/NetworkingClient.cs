@@ -25,6 +25,8 @@ namespace Sym.Networking.NetworkingClients
 
         public readonly int Port;
 
+        protected bool Disposed { get; private set; }
+
         protected NetworkingClient(string address)
         {
             if (!NetworkChecks()) return;
@@ -132,6 +134,6 @@ namespace Sym.Networking.NetworkingClients
         /// <returns></returns>
         public abstract byte[] GetBytes();
 
-        public abstract void Dispose();
+        public virtual void Dispose() => Disposed = true;
     }
 }

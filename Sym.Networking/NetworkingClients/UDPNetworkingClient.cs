@@ -76,6 +76,7 @@ namespace Sym.Networking.NetworkingClients
 
         public override void Dispose()
         {
+            base.Dispose();
             UdpClient?.Close();
             UdpClient?.Dispose();
         }

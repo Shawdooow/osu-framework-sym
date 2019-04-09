@@ -147,10 +147,6 @@ namespace Sym.Networking.NetworkingHandlers.Peer
         protected override void Dispose(bool isDisposing)
         {
             SendToServer(new DisconnectPacket());
-
-            TcpNetworkingClient.Dispose();
-            UdpNetworkingClient?.Dispose();
-
             base.Dispose(isDisposing);
         }
     }

@@ -173,6 +173,13 @@ namespace Sym.Networking.NetworkingHandlers
         }
 
         #endregion
+
+        protected override void Dispose(bool isDisposing)
+        {
+            TcpNetworkingClient?.Dispose();
+            UdpNetworkingClient?.Dispose();
+            base.Dispose(isDisposing);
+        }
     }
 
     public enum ConnectionStatues
