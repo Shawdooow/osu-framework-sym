@@ -62,7 +62,7 @@ namespace Sym.Networking.NetworkingClients
                 TcpClient.ReceiveBufferSize = BUFFER_SIZE;
                 TcpClient.SendBufferSize = BUFFER_SIZE / 8;
                 TcpClient.ReceiveTimeout = TIMEOUT;
-                TcpClient.SendTimeout = TIMEOUT;
+                TcpClient.SendTimeout = TIMEOUT / 2;
                 Logger.Log($"No exceptions while creating peer TcpClient with address {address}!", LoggingTarget.Runtime, LogLevel.Debug);
             }
             catch (Exception e)
@@ -96,10 +96,10 @@ namespace Sym.Networking.NetworkingClients
             TcpClient c = result.Result;
             TcpClients.Add(c);
 
-            c.ReceiveBufferSize = BUFFER_SIZE;
+            c.ReceiveBufferSize = BUFFER_SIZE / 8;
             c.SendBufferSize = BUFFER_SIZE / 8;
             c.ReceiveTimeout = TIMEOUT;
-            c.SendTimeout = TIMEOUT;
+            c.SendTimeout = TIMEOUT  / 2;
 
             OnClientConnected?.Invoke(c);
             AcceptClient();
@@ -172,7 +172,7 @@ namespace Sym.Networking.NetworkingClients
             {
                 try
                 {
-                    stream.Write(data, 0, PACKET_SIZE);
+                    stream.Write(data, 0, data.Length);
 
                     string address = e != null ? e.ToString() : EndPoint.ToString();
                     Logger.Log($"No exceptions while sending bytes to {address}", LoggingTarget.Runtime, LogLevel.Debug);
@@ -189,7 +189,7 @@ namespace Sym.Networking.NetworkingClients
         public virtual byte[] GetBytes(TcpClient client)
         {
             byte[] data = new byte[PACKET_SIZE];
-            client.GetStream().Read(data, 0, PACKET_SIZE);
+            client.GetStream().Read(data, 0, data.Length);
 
             return data;
         }
