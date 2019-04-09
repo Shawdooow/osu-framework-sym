@@ -60,7 +60,9 @@ namespace Sym.Networking.NetworkingClients
                 TcpClient = new TcpClient();
                 TcpClient.Connect(EndPoint);
                 TcpClient.ReceiveBufferSize = BUFFER_SIZE;
+                TcpClient.SendBufferSize = BUFFER_SIZE;
                 TcpClient.ReceiveTimeout = TIMEOUT;
+                TcpClient.SendTimeout = TIMEOUT;
                 Logger.Log($"No exceptions while creating peer TcpClient with address {address}!", LoggingTarget.Runtime, LogLevel.Debug);
             }
             catch (Exception e)
@@ -94,8 +96,9 @@ namespace Sym.Networking.NetworkingClients
             TcpClient c = result.Result;
             TcpClients.Add(c);
 
-            c.SendBufferSize = BUFFER_SIZE;
             c.ReceiveBufferSize = BUFFER_SIZE;
+            c.SendBufferSize = BUFFER_SIZE;
+            c.ReceiveTimeout = TIMEOUT;
             c.SendTimeout = TIMEOUT;
 
             OnClientConnected?.Invoke(c);

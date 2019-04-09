@@ -123,15 +123,7 @@ namespace Sym.Networking.NetworkingHandlers.Peer
         /// </summary>
         public virtual void Connect()
         {
-            // ReSharper disable once InvertIf
-            if (true)//ConnectionStatues <= ConnectionStatues.Disconnected)
-            {
-                Logger.Log($"Attempting to connect to {TcpNetworkingClient.Address}", LoggingTarget.Network);
-                SendToServer(new ConnectPacket());
-                Host.Statues = ConnectionStatues.Connecting;
-            }
-            //else
-                //Logger.Log("We are already connecting, please wait for us to fail before retrying!", LoggingTarget.Network);
+
         }
 
         public virtual void Disconnect()
