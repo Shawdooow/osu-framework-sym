@@ -157,7 +157,7 @@ namespace Sym.Networking.NetworkingHandlers.Server
 
         #region Send Functions
 
-        protected virtual void SendToPeer(Packet packet, T t) => TcpNetworkingClient.SendPacket(packet, t.EndPoint);
+        protected virtual void SendToPeer(Packet packet, T t) => TcpNetworkingClient.SendPacket(SignPacket(packet), t.EndPoint);
 
         protected void ShareWithAllClients(Packet packet)
         {
