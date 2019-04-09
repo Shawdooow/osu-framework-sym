@@ -45,12 +45,16 @@ namespace Sym.Networking.NetworkingHandlers.Server
                 TcpNetworkingClient = new TcpNetworkingClient(Port);
                 TcpNetworkingClient.OnClientConnected += value =>
                 {
-                    string[] address = value.Client.LocalEndPoint.ToString().Split(':');
+                    string[] address = value.Client.RemoteEndPoint.ToString().Split(':');
 
                     T t = GetClient(new IPEndPoint(IPAddress.Parse(address[0]), int.Parse(address[1])));
 
+                    t.LastConnectionTime = Time.Current;
+                    t.Statues = ConnectionStatues.Connected;
+
                     t.TcpClient = value;
                     Peers.Add(t);
+                    SendToPeer(new ConnectedPacket(), t);
                     OnPeerConnected?.Invoke(t);
                 };
             };
@@ -83,10 +87,6 @@ namespace Sym.Networking.NetworkingHandlers.Server
         {
             switch (info.Packet)
             {
-                case ConnectPacket connectPacket:
-                    Peers.Add(info.Client);
-                    SendToPeer(new ConnectedPacket(), info.Client);
-                    break;
                 case DisconnectPacket disconnectPacket:
                     ClientDisconnecting(info);
                     break;

@@ -95,6 +95,7 @@ namespace Sym.Networking.NetworkingClients
             TcpClients.Add(c);
 
             c.SendBufferSize = BUFFER_SIZE;
+            c.ReceiveBufferSize = BUFFER_SIZE;
             c.SendTimeout = TIMEOUT;
 
             OnClientConnected?.Invoke(c);
@@ -147,9 +148,9 @@ namespace Sym.Networking.NetworkingClients
             if (end != null)
             {
                 foreach (TcpClient c in TcpClients)
-                    if (c.Client.LocalEndPoint.ToString() == end.ToString())
+                    if (c.Client.RemoteEndPoint.ToString() == end.ToString())
                     {
-                        send(c.GetStream(), bytes, c.Client.LocalEndPoint);
+                        send(c.GetStream(), bytes, c.Client.RemoteEndPoint);
                         break;
                     }
             }
