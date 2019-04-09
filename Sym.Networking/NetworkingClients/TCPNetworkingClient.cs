@@ -89,11 +89,11 @@ namespace Sym.Networking.NetworkingClients
 
         public void AcceptClient() => TcpListener.AcceptTcpClientAsync().ContinueWith(result =>
         {
-            TcpClient client = result.Result;
-            TcpClients.Add(client);
-            client.SendBufferSize = BUFFER_SIZE;
-            client.SendTimeout = TIMEOUT;
-            OnClientConnected?.Invoke(client);
+            TcpClient c = result.Result;
+            TcpClients.Add(c);
+            c.SendBufferSize = BUFFER_SIZE;
+            c.SendTimeout = TIMEOUT;
+            OnClientConnected?.Invoke(c);
             AcceptClient();
         });
 
@@ -128,10 +128,10 @@ namespace Sym.Networking.NetworkingClients
         {
             if (end != null)
             {
-                foreach (TcpClient client in TcpClients)
-                    if (client.Client.LocalEndPoint.ToString() == end.ToString())
+                foreach (TcpClient c in TcpClients)
+                    if (c.Client.LocalEndPoint.ToString() == end.ToString())
                     {
-                        send(client.GetStream(), bytes);
+                        send(c.GetStream(), bytes, c.Client.LocalEndPoint);
                         break;
                     }
             }
@@ -146,16 +146,18 @@ namespace Sym.Networking.NetworkingClients
                 send(NetworkStream, bytes);
             }
 
-            void send(NetworkStream stream, byte[] data)
+            void send(NetworkStream stream, byte[] data, EndPoint e = null)
             {
                 try
                 {
                     stream.Write(data, 0, PACKET_SIZE);
-                    Logger.Log($"No exceptions while sending bytes to {EndPoint.Address}", LoggingTarget.Runtime, LogLevel.Debug);
+
+                    string address = e != null ? e.ToString() : EndPoint.ToString();
+                    Logger.Log($"No exceptions while sending bytes to {address}", LoggingTarget.Runtime, LogLevel.Debug);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Logger.Error(e, "Error sending bytes!");
+                    Logger.Error(ex, "Error sending bytes!");
                 }
             }
         }
@@ -179,10 +181,10 @@ namespace Sym.Networking.NetworkingClients
             TcpClient?.Close();
             TcpClient?.Dispose();
             TcpListener?.Stop();
-            foreach (TcpClient client in TcpClients)
+            foreach (TcpClient c in TcpClients)
             {
-                client.Close();
-                client.Dispose();
+                c.Close();
+                c.Dispose();
             }
         }
     }
