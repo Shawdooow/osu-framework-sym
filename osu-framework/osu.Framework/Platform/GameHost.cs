@@ -127,7 +127,6 @@ namespace osu.Framework.Platform
         {
             threads.Add(thread);
             thread.IsActive.BindTo(IsActive);
-            thread.UnhandledException = unhandledExceptionHandler;
             thread.Monitor.EnablePerformanceProfiling = performanceLogging.Value;
         }
 
@@ -194,34 +193,6 @@ namespace osu.Framework.Platform
         {
             this.toolkitOptions = toolkitOptions;
             Name = gameName;
-        }
-
-        private void unhandledExceptionHandler(object sender, UnhandledExceptionEventArgs args)
-        {
-            var exception = (Exception)args.ExceptionObject;
-            exception.Data["unhandled"] = "unhandled";
-            handleException(exception);
-        }
-
-        private void unobservedExceptionHandler(object sender, UnobservedTaskExceptionEventArgs args)
-        {
-            args.Exception.Data["unhandled"] = "unobserved";
-            handleException(args.Exception);
-        }
-
-        private void handleException(Exception exception)
-        {
-            if (ExceptionThrown?.Invoke(exception) != true)
-            {
-                AppDomain.CurrentDomain.UnhandledException -= unhandledExceptionHandler;
-
-                var captured = ExceptionDispatchInfo.Capture(exception);
-
-                //we want to throw this exception on the input thread to interrupt window and also headless execution.
-                InputThread.Scheduler.Add(() => { captured.Throw(); });
-            }
-
-            Logger.Error(exception, $"An {exception.Data["unhandled"]} error has occurred.", recursive: true);
         }
 
         protected virtual void OnActivated() => UpdateThread.Scheduler.Add(() => Activated?.Invoke());
@@ -423,9 +394,6 @@ namespace osu.Framework.Platform
             try
             {
                 toolkit = toolkitOptions != null ? Toolkit.Init(toolkitOptions) : Toolkit.Init();
-
-                AppDomain.CurrentDomain.UnhandledException += unhandledExceptionHandler;
-                TaskScheduler.UnobservedTaskException += unobservedExceptionHandler;
 
                 RegisterThread(DrawThread = new DrawThread(DrawFrame)
                 {
@@ -785,9 +753,6 @@ namespace osu.Framework.Platform
             // Delay disposal until the game has exited
             while (ExecutionState > ExecutionState.Stopped)
                 Thread.Sleep(10);
-
-            AppDomain.CurrentDomain.UnhandledException -= unhandledExceptionHandler;
-            TaskScheduler.UnobservedTaskException -= unobservedExceptionHandler;
 
             Root?.Dispose();
             Root = null;
