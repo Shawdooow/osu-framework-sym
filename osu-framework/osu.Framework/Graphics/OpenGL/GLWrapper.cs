@@ -17,17 +17,23 @@ using osu.Framework.Statistics;
 using osu.Framework.MathUtils;
 using osu.Framework.Graphics.Primitives;
 using osu.Framework.Graphics.Colour;
-using osu.Framework.Lists;
 using osu.Framework.Platform;
 
 namespace osu.Framework.Graphics.OpenGL
 {
     public static class GLWrapper
     {
+        /// <summary>
+        /// Maximum number of <see cref="DrawNode"/>s a <see cref="Drawable"/> can draw with.
+        /// This is a carefully-chosen number to enable the update and draw threads to work concurrently without causing unnecessary load.
+        /// </summary>
+        public const int MAX_DRAW_NODES = 3;
+
         public static MaskingInfo CurrentMaskingInfo { get; private set; }
         public static RectangleI Viewport { get; private set; }
         public static RectangleF Ortho { get; private set; }
         public static Matrix4 ProjectionMatrix { get; private set; }
+        public static DepthInfo CurrentDepthInfo { get; private set; }
 
         public static bool UsingBackbuffer => frame_buffer_stack.Peek() == DefaultFrameBuffer;
 
@@ -47,6 +53,8 @@ namespace osu.Framework.Graphics.OpenGL
         /// </summary>
         private static readonly ConcurrentQueue<Action> expensive_operations_queue = new ConcurrentQueue<Action>();
 
+        private static readonly List<IVertexBatch> batch_reset_list = new List<IVertexBatch>();
+
         public static bool IsInitialized { get; private set; }
 
         private static WeakReference<GameHost> host;
@@ -60,7 +68,6 @@ namespace osu.Framework.Graphics.OpenGL
 
             MaxTextureSize = Math.Min(4096, GL.GetInteger(GetPName.MaxTextureSize));
 
-            GL.Disable(EnableCap.DepthTest);
             GL.Disable(EnableCap.StencilTest);
             GL.Enable(EnableCap.Blend);
             GL.Enable(EnableCap.ScissorTest);
@@ -70,8 +77,20 @@ namespace osu.Framework.Graphics.OpenGL
 
         internal static void ScheduleDisposal(Action disposalAction)
         {
+            int frameCount = 0;
+
             if (host != null && host.TryGetTarget(out GameHost h))
-                h.UpdateThread.Scheduler.Add(() => reset_scheduler.Add(disposalAction.Invoke));
+                h.UpdateThread.Scheduler.Add(scheduleNextDisposal);
+
+            void scheduleNextDisposal() => reset_scheduler.Add(() =>
+            {
+                // There may be a number of DrawNodes queued to be drawn
+                // Disposal should only take place after
+                if (frameCount++ >= MAX_DRAW_NODES)
+                    disposalAction.Invoke();
+                else
+                    scheduleNextDisposal();
+            });
         }
 
         internal static void Reset(Vector2 size)
@@ -85,17 +104,19 @@ namespace osu.Framework.Graphics.OpenGL
 
             lastBoundTexture = null;
             lastActiveBatch = null;
-            lastDepthTest = null;
             lastBlendingInfo = new BlendingInfo();
             lastBlendingEnabledState = null;
 
-            all_batches.ForEachAlive(b => b.ResetCounters());
+            foreach (var b in batch_reset_list)
+                b.ResetCounters();
+            batch_reset_list.Clear();
 
             viewport_stack.Clear();
             ortho_stack.Clear();
             masking_stack.Clear();
             scissor_rect_stack.Clear();
             frame_buffer_stack.Clear();
+            depth_stack.Clear();
 
             BindFrameBuffer(DefaultFrameBuffer);
 
@@ -113,20 +134,30 @@ namespace osu.Framework.Graphics.OpenGL
                 BlendRange = 1,
                 AlphaExponent = 1,
             }, true);
+
+            PushDepthInfo(new DepthInfo(false));
+            Clear(ClearInfo.Default);
         }
 
-        // We initialize to an invalid value such that we are not missing an initial GL.ClearColor call.
-        private static Color4 clearColour = new Color4(-1, -1, -1, -1);
+        private static ClearInfo currentClearInfo;
 
-        public static void ClearColour(Color4 c)
+        public static void Clear(ClearInfo clearInfo)
         {
-            if (clearColour != c)
+            if (clearInfo.Colour != currentClearInfo.Colour)
+                GL.ClearColor(clearInfo.Colour);
+
+            if (clearInfo.Depth != currentClearInfo.Depth)
             {
-                clearColour = c;
-                GL.ClearColor(clearColour);
+                // Todo: Wtf. osuTK's bindings are broken for glClearDepthf(). Using glClearDepth() for now
+                osuTK.Graphics.OpenGL.GL.ClearDepth(clearInfo.Depth);
             }
 
+            if (clearInfo.Stencil != currentClearInfo.Stencil)
+                GL.ClearStencil(clearInfo.Stencil);
+
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+
+            currentClearInfo = clearInfo;
         }
 
         /// <summary>
@@ -173,8 +204,6 @@ namespace osu.Framework.Graphics.OpenGL
 
         private static IVertexBatch lastActiveBatch;
 
-        private static readonly WeakList<IVertexBatch> all_batches = new WeakList<IVertexBatch>();
-
         /// <summary>
         /// Sets the last vertex batch used for drawing.
         /// <para>
@@ -185,18 +214,15 @@ namespace osu.Framework.Graphics.OpenGL
         /// <param name="batch">The batch.</param>
         internal static void SetActiveBatch(IVertexBatch batch)
         {
-            if (lastActiveBatch == batch) return;
+            if (lastActiveBatch == batch)
+                return;
+
+            batch_reset_list.Add(batch);
 
             FlushCurrentBatch();
 
             lastActiveBatch = batch;
         }
-
-        /// <summary>
-        /// Begins tracking a <see cref="IVertexBatch"/>, resetting its counters every frame. This should be invoked once for every <see cref="IVertexBatch"/> in use.
-        /// </summary>
-        /// <param name="batch">The batch to register.</param>
-        internal static void RegisterVertexBatch(IVertexBatch batch) => reset_scheduler.Add(() => all_batches.Add(batch));
 
         private static TextureGL lastBoundTexture;
 
@@ -219,30 +245,13 @@ namespace osu.Framework.Graphics.OpenGL
             }
         }
 
-        private static bool? lastDepthTest;
-
-        public static void SetDepthTest(bool enabled)
-        {
-            if (lastDepthTest == enabled)
-                return;
-
-            lastDepthTest = enabled;
-
-            FlushCurrentBatch();
-
-            if (enabled)
-                GL.Enable(EnableCap.DepthTest);
-            else
-                GL.Disable(EnableCap.DepthTest);
-        }
-
         private static BlendingInfo lastBlendingInfo;
         private static bool? lastBlendingEnabledState;
 
         /// <summary>
         /// Sets the blending function to draw with.
         /// </summary>
-        /// <param name="blendingInfo">The infor we should use to update the active state.</param>
+        /// <param name="blendingInfo">The info we should use to update the active state.</param>
         public static void SetBlend(BlendingInfo blendingInfo)
         {
             if (lastBlendingInfo.Equals(blendingInfo))
@@ -299,6 +308,7 @@ namespace osu.Framework.Graphics.OpenGL
 
             if (Viewport == actualRect)
                 return;
+
             Viewport = actualRect;
 
             GL.Viewport(Viewport.Left, Viewport.Top, Viewport.Width, Viewport.Height);
@@ -320,6 +330,7 @@ namespace osu.Framework.Graphics.OpenGL
 
             if (Viewport == actualRect)
                 return;
+
             Viewport = actualRect;
 
             GL.Viewport(Viewport.Left, Viewport.Top, Viewport.Width, Viewport.Height);
@@ -340,6 +351,7 @@ namespace osu.Framework.Graphics.OpenGL
             ortho_stack.Push(ortho);
             if (Ortho == ortho)
                 return;
+
             Ortho = ortho;
 
             ProjectionMatrix = Matrix4.CreateOrthographicOffCenter(Ortho.Left, Ortho.Right, Ortho.Bottom, Ortho.Top, -1, 1);
@@ -362,6 +374,7 @@ namespace osu.Framework.Graphics.OpenGL
 
             if (Ortho == actualRect)
                 return;
+
             Ortho = actualRect;
 
             ProjectionMatrix = Matrix4.CreateOrthographicOffCenter(Ortho.Left, Ortho.Right, Ortho.Bottom, Ortho.Top, -1, 1);
@@ -373,6 +386,7 @@ namespace osu.Framework.Graphics.OpenGL
         private static readonly Stack<MaskingInfo> masking_stack = new Stack<MaskingInfo>();
         private static readonly Stack<RectangleI> scissor_rect_stack = new Stack<RectangleI>();
         private static readonly Stack<int> frame_buffer_stack = new Stack<int>();
+        private static readonly Stack<DepthInfo> depth_stack = new Stack<DepthInfo>();
 
         public static void UpdateScissorToCurrentViewportAndOrtho()
         {
@@ -498,6 +512,53 @@ namespace osu.Framework.Graphics.OpenGL
         }
 
         /// <summary>
+        /// Applies a new depth information.
+        /// </summary>
+        /// <param name="depthInfo">The depth information.</param>
+        public static void PushDepthInfo(DepthInfo depthInfo)
+        {
+            depth_stack.Push(depthInfo);
+
+            if (CurrentDepthInfo.Equals(depthInfo))
+                return;
+
+            CurrentDepthInfo = depthInfo;
+            setDepthInfo(CurrentDepthInfo);
+        }
+
+        /// <summary>
+        /// Applies the last depth information.
+        /// </summary>
+        public static void PopDepthInfo()
+        {
+            Trace.Assert(depth_stack.Count > 1);
+
+            depth_stack.Pop();
+            DepthInfo depthInfo = depth_stack.Peek();
+
+            if (CurrentDepthInfo.Equals(depthInfo))
+                return;
+
+            CurrentDepthInfo = depthInfo;
+            setDepthInfo(CurrentDepthInfo);
+        }
+
+        private static void setDepthInfo(DepthInfo depthInfo)
+        {
+            FlushCurrentBatch();
+
+            if (depthInfo.DepthTest)
+            {
+                GL.Enable(EnableCap.DepthTest);
+                GL.DepthFunc(depthInfo.Function);
+            }
+            else
+                GL.Disable(EnableCap.DepthTest);
+
+            GL.DepthMask(depthInfo.WriteDepth);
+        }
+
+        /// <summary>
         /// Binds a framebuffer.
         /// </summary>
         /// <param name="frameBuffer">The framebuffer to bind.</param>
@@ -548,48 +609,7 @@ namespace osu.Framework.Graphics.OpenGL
             while (frame_buffer_stack.Peek() == frameBuffer)
                 UnbindFrameBuffer(frameBuffer);
 
-            //todo: don't use scheduler
             ScheduleDisposal(() => { GL.DeleteFramebuffer(frameBuffer); });
-        }
-
-        /// <summary>
-        /// Deletes a buffer object.
-        /// </summary>
-        /// <param name="vboId">The buffer object to delete.</param>
-        internal static void DeleteBuffer(int vboId)
-        {
-            //todo: don't use scheduler
-            ScheduleDisposal(() => { GL.DeleteBuffer(vboId); });
-        }
-
-        /// <summary>
-        /// Deletes textures.
-        /// </summary>
-        /// <param name="ids">An array of textures to delete.</param>
-        internal static void DeleteTextures(params int[] ids)
-        {
-            //todo: don't use scheduler
-            ScheduleDisposal(() => { GL.DeleteTextures(ids.Length, ids); });
-        }
-
-        /// <summary>
-        /// Deletes a shader program.
-        /// </summary>
-        /// <param name="shader">The shader program to delete.</param>
-        internal static void DeleteProgram(Shader shader)
-        {
-            //todo: don't use scheduler
-            ScheduleDisposal(() => { GL.DeleteProgram(shader); });
-        }
-
-        /// <summary>
-        /// Deletes a shader part.
-        /// </summary>
-        /// <param name="shaderPart">The shader part to delete.</param>
-        internal static void DeleteShader(ShaderPart shaderPart)
-        {
-            //todo: don't use scheduler
-            ScheduleDisposal(() => { GL.DeleteShader(shaderPart); });
         }
 
         private static int currentShader;
@@ -689,20 +709,17 @@ namespace osu.Framework.Graphics.OpenGL
         public bool Hollow;
         public float HollowCornerRadius;
 
-        public bool Equals(MaskingInfo other)
-        {
-            return
-                ScreenSpaceAABB == other.ScreenSpaceAABB &&
-                MaskingRect == other.MaskingRect &&
-                ToMaskingSpace == other.ToMaskingSpace &&
-                CornerRadius == other.CornerRadius &&
-                BorderThickness == other.BorderThickness &&
-                BorderColour.Equals(other.BorderColour) &&
-                BlendRange == other.BlendRange &&
-                AlphaExponent == other.AlphaExponent &&
-                EdgeOffset == other.EdgeOffset &&
-                Hollow == other.Hollow &&
-                HollowCornerRadius == other.HollowCornerRadius;
-        }
+        public bool Equals(MaskingInfo other) =>
+            ScreenSpaceAABB == other.ScreenSpaceAABB &&
+            MaskingRect == other.MaskingRect &&
+            ToMaskingSpace == other.ToMaskingSpace &&
+            CornerRadius == other.CornerRadius &&
+            BorderThickness == other.BorderThickness &&
+            BorderColour.Equals(other.BorderColour) &&
+            BlendRange == other.BlendRange &&
+            AlphaExponent == other.AlphaExponent &&
+            EdgeOffset == other.EdgeOffset &&
+            Hollow == other.Hollow &&
+            HollowCornerRadius == other.HollowCornerRadius;
     }
 }

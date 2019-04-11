@@ -305,7 +305,6 @@ namespace osu.Framework.Graphics.Performance
             }
         }
 
-
         protected override bool OnKeyDown(KeyDownEvent e)
         {
             switch (e.Key)
@@ -513,11 +512,12 @@ namespace osu.Framework.Graphics.Performance
                 set
                 {
                     if (expanded == value) return;
+
                     expanded = value;
 
                     if (expanded)
                     {
-                        this.ResizeTo(new Vector2(bar_width + text.TextSize + 2, 1), 100);
+                        this.ResizeTo(new Vector2(bar_width + text.Font.Size + 2, 1), 100);
                         text.FadeIn(100);
                     }
                     else
@@ -557,7 +557,7 @@ namespace osu.Framework.Graphics.Performance
                         Anchor = Anchor.BottomRight,
                         Rotation = -90,
                         Position = new Vector2(-bar_width - 1, 0),
-                        TextSize = 16,
+                        Font = new FontUsage(size: 16),
                     },
                     box = new Box
                     {

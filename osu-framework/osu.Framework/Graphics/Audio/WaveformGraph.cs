@@ -26,7 +26,7 @@ namespace osu.Framework.Graphics.Audio
     /// </summary>
     public class WaveformGraph : Drawable
     {
-        private Shader shader;
+        private IShader shader;
         private readonly Texture texture;
 
         public WaveformGraph()
@@ -37,7 +37,7 @@ namespace osu.Framework.Graphics.Audio
         [BackgroundDependencyLoader]
         private void load(ShaderManager shaders)
         {
-            shader = shaders?.Load(VertexShaderDescriptor.TEXTURE_2, FragmentShaderDescriptor.TEXTURE_ROUNDED);
+            shader = shaders.Load(VertexShaderDescriptor.TEXTURE_2, FragmentShaderDescriptor.TEXTURE_ROUNDED);
         }
 
         private float resolution = 1;
@@ -55,6 +55,7 @@ namespace osu.Framework.Graphics.Audio
 
                 if (resolution == value)
                     return;
+
                 resolution = value;
                 generate();
             }
@@ -91,6 +92,7 @@ namespace osu.Framework.Graphics.Audio
             {
                 if (lowColour == value)
                     return;
+
                 lowColour = value;
 
                 Invalidate(Invalidation.DrawNode);
@@ -110,6 +112,7 @@ namespace osu.Framework.Graphics.Audio
             {
                 if (midColour == value)
                     return;
+
                 midColour = value;
 
                 Invalidate(Invalidation.DrawNode);
@@ -129,6 +132,7 @@ namespace osu.Framework.Graphics.Audio
             {
                 if (highColour == value)
                     return;
+
                 highColour = value;
 
                 Invalidate(Invalidation.DrawNode);
@@ -178,7 +182,6 @@ namespace osu.Framework.Graphics.Audio
             cancelSource = null;
         }
 
-        private readonly WaveformDrawNodeSharedData sharedData = new WaveformDrawNodeSharedData();
         protected override DrawNode CreateDrawNode() => new WaveformDrawNode();
 
         protected override void ApplyDrawNode(DrawNode node)
@@ -188,7 +191,6 @@ namespace osu.Framework.Graphics.Audio
             n.Shader = shader;
             n.Texture = texture;
             n.DrawSize = DrawSize;
-            n.Shared = sharedData;
             n.Points = generatedWaveform?.GetPoints();
             n.Channels = generatedWaveform?.GetChannels() ?? 0;
             n.LowColour = lowColour ?? DrawColourInfo.Colour;
@@ -204,17 +206,10 @@ namespace osu.Framework.Graphics.Audio
             cancelGeneration();
         }
 
-        private class WaveformDrawNodeSharedData
-        {
-            public readonly QuadBatch<TexturedVertex2D> VertexBatch = new QuadBatch<TexturedVertex2D>(1000, 10);
-        }
-
         private class WaveformDrawNode : DrawNode
         {
-            public Shader Shader;
+            public IShader Shader;
             public Texture Texture;
-
-            public WaveformDrawNodeSharedData Shared;
 
             public Vector2 DrawSize;
             public int Channels;
@@ -231,7 +226,7 @@ namespace osu.Framework.Graphics.Audio
 
             public IReadOnlyList<WaveformPoint> Points
             {
-                get { return points; }
+                get => points;
                 set
                 {
                     points = value;
@@ -244,6 +239,8 @@ namespace osu.Framework.Graphics.Audio
                     }
                 }
             }
+
+            private readonly QuadBatch<TexturedVertex2D> vertexBatch = new QuadBatch<TexturedVertex2D>(1000, 10);
 
             public override void Draw(Action<TexturedVertex2D> vertexAction)
             {
@@ -271,6 +268,7 @@ namespace osu.Framework.Graphics.Audio
 
                     if (rightX < localMaskingRectangle.Left)
                         continue;
+
                     if (leftX > localMaskingRectangle.Right)
                         break; // X is always increasing
 
@@ -312,10 +310,17 @@ namespace osu.Framework.Graphics.Audio
                     }
 
                     quadToDraw *= DrawInfo.Matrix;
-                    Texture.DrawQuad(quadToDraw, colour, null, Shared.VertexBatch.AddAction, Vector2.Divide(localInflationAmount, quadToDraw.Size));
+                    Texture.DrawQuad(quadToDraw, colour, null, vertexBatch.AddAction, Vector2.Divide(localInflationAmount, quadToDraw.Size));
                 }
 
                 Shader.Unbind();
+            }
+
+            protected override void Dispose(bool isDisposing)
+            {
+                base.Dispose(isDisposing);
+
+                vertexBatch.Dispose();
             }
         }
     }

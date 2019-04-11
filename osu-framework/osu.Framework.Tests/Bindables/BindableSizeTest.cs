@@ -2,8 +2,8 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using NUnit.Framework;
-using osu.Framework.Configuration;
 using System.Drawing;
+using osu.Framework.Bindables;
 
 namespace osu.Framework.Tests.Bindables
 {
@@ -43,9 +43,9 @@ namespace osu.Framework.Tests.Bindables
         [TestCase("120x0", -10, -10, 10, 10, 10, 0)]
         [TestCase("-100x400", -25, 200, 25, 300, -25, 300)]
         public void TestParsingStringWithRange(string value,
-            int minValueWidth, int minValueHeight,
-            int maxValueWidth, int maxValueHeight,
-            int expectedWidth, int expectedHeight
+                                               int minValueWidth, int minValueHeight,
+                                               int maxValueWidth, int maxValueHeight,
+                                               int expectedWidth, int expectedHeight
         )
         {
             var minValue = new Size(minValueWidth, minValueHeight);

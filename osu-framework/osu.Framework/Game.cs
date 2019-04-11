@@ -1,10 +1,13 @@
 ﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using osuTK;
 using osu.Framework.Allocation;
 using osu.Framework.Audio;
+using osu.Framework.Bindables;
 using osu.Framework.Configuration;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
@@ -25,31 +28,48 @@ namespace osu.Framework
     {
         public GameWindow Window => Host?.Window;
 
-        public ResourceStore<byte[]> Resources;
+        public ResourceStore<byte[]> Resources { get; private set; }
 
-        public TextureStore Textures;
+        public TextureStore Textures { get; private set; }
 
         protected GameHost Host { get; private set; }
 
-        private bool isActive;
+        private readonly Bindable<bool> isActive = new Bindable<bool>(true);
 
-        public AudioManager Audio;
+        /// <summary>
+        /// Whether the game is active (in the foreground).
+        /// </summary>
+        public IBindable<bool> IsActive => isActive;
 
-        public ShaderManager Shaders;
+        public AudioManager Audio { get; private set; }
 
-        public FontStore Fonts;
+        public ShaderManager Shaders { get; private set; }
+
+        public FontStore Fonts { get; private set; }
+
+        private FontStore localFonts;
 
         protected LocalisationManager Localisation { get; private set; }
 
         private readonly Container content;
+
         private PerformanceOverlay performanceContainer;
-        internal DrawVisualiser DrawVisualiser;
+
+        private DrawVisualiser drawVisualiser;
 
         private LogOverlay logOverlay;
 
         protected override Container<Drawable> Content => content;
 
         protected internal virtual UserInputManager CreateUserInputManager() => new UserInputManager();
+
+        /// <summary>
+        /// Provide <see cref="FrameworkSetting"/> defaults which should override those provided by osu-framework.
+        /// <remarks>
+        /// Please check https://github.com/ppy/osu-framework/blob/master/osu.Framework/Configuration/FrameworkConfigManager.cs for expected types.
+        /// </remarks>
+        /// </summary>
+        protected internal virtual IDictionary<FrameworkSetting, object> GetFrameworkConfigDefaults() => null;
 
         protected Game()
         {
@@ -68,7 +88,7 @@ namespace osu.Framework
 
         private void addDebugTools()
         {
-            LoadComponentAsync(DrawVisualiser = new DrawVisualiser
+            LoadComponentAsync(drawVisualiser = new DrawVisualiser
             {
                 Depth = float.MinValue / 2,
             }, AddInternal);
@@ -87,8 +107,8 @@ namespace osu.Framework
         {
             Host = host;
             host.Exiting += OnExiting;
-            host.Activated += () => IsActive = true;
-            host.Deactivated += () => IsActive = false;
+            host.Activated += () => isActive.Value = true;
+            host.Deactivated += () => isActive.Value = false;
         }
 
         private DependencyContainer dependencies;
@@ -114,10 +134,8 @@ namespace osu.Framework
             samples.AddStore(new NamespacedResourceStore<byte[]>(Resources, @"Samples"));
             samples.AddStore(new OnlineStore());
 
-            Audio = new AudioManager(tracks, samples) { EventScheduler = Scheduler };
+            Audio = new AudioManager(Host.AudioThread, tracks, samples) { EventScheduler = Scheduler };
             dependencies.Cache(Audio);
-
-            Host.RegisterThread(Audio.Thread);
 
             //attach our bindables to the audio subsystem.
             config.BindWith(FrameworkSetting.AudioDevice, Audio.AudioDevice);
@@ -128,10 +146,22 @@ namespace osu.Framework
             Shaders = new ShaderManager(new NamespacedResourceStore<byte[]>(Resources, @"Shaders"));
             dependencies.Cache(Shaders);
 
-            Fonts = new FontStore(new GlyphStore(Resources, @"Fonts/OpenSans"));
-            Fonts.AddStore(new GlyphStore(Resources, @"Fonts/OpenSans-Bold"));
-            Fonts.AddStore(new GlyphStore(Resources, @"Fonts/OpenSans-Italic"));
-            Fonts.AddStore(new GlyphStore(Resources, @"Fonts/OpenSans-BoldItalic"));
+            // base store is for user fonts
+            Fonts = new FontStore();
+
+            // nested store for framework provided fonts.
+            // note that currently this means there could be two async font load operations.
+            Fonts.AddStore(localFonts = new FontStore());
+
+            localFonts.AddStore(new GlyphStore(Resources, @"Fonts/OpenSans/OpenSans"));
+            localFonts.AddStore(new GlyphStore(Resources, @"Fonts/OpenSans/OpenSans-Bold"));
+            localFonts.AddStore(new GlyphStore(Resources, @"Fonts/OpenSans/OpenSans-Italic"));
+            localFonts.AddStore(new GlyphStore(Resources, @"Fonts/OpenSans/OpenSans-BoldItalic"));
+
+            Fonts.AddStore(new GlyphStore(Resources, @"Fonts/FontAwesome5/FontAwesome-Solid"));
+            Fonts.AddStore(new GlyphStore(Resources, @"Fonts/FontAwesome5/FontAwesome-Regular"));
+            Fonts.AddStore(new GlyphStore(Resources, @"Fonts/FontAwesome5/FontAwesome-Brands"));
+
             dependencies.Cache(Fonts);
 
             Localisation = new LocalisationManager(config);
@@ -157,25 +187,6 @@ namespace osu.Framework
             addDebugTools();
         }
 
-        /// <summary>
-        /// Whether the Game environment is active (in the foreground).
-        /// </summary>
-        public bool IsActive
-        {
-            get => isActive;
-            private set
-            {
-                if (value == isActive)
-                    return;
-                isActive = value;
-
-                if (isActive)
-                    OnActivated();
-                else
-                    OnDeactivated();
-            }
-        }
-
         protected FrameStatisticsMode FrameStatisticsMode
         {
             get => performanceContainer.State;
@@ -199,9 +210,10 @@ namespace osu.Framework
                             FrameStatisticsMode = FrameStatisticsMode.None;
                             break;
                     }
+
                     return true;
                 case FrameworkAction.ToggleDrawVisualiser:
-                    DrawVisualiser.ToggleVisibility();
+                    drawVisualiser.ToggleVisibility();
                     return true;
                 case FrameworkAction.ToggleLogOverlay:
                     logOverlay.ToggleVisibility();
@@ -218,21 +230,13 @@ namespace osu.Framework
 
         public void Exit()
         {
+            if (Host == null)
+                throw new InvalidOperationException("Attempted to exit a game which has not yet been run");
+
             Host.Exit();
         }
 
-        protected virtual void OnActivated()
-        {
-        }
-
-        protected virtual void OnDeactivated()
-        {
-        }
-
-        protected virtual bool OnExiting()
-        {
-            return false;
-        }
+        protected virtual bool OnExiting() => false;
 
         /// <summary>
         /// Called before a frame cycle has started (Update and Draw).

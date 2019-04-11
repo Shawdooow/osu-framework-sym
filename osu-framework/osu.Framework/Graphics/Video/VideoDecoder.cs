@@ -57,10 +57,6 @@ namespace osu.Framework.Graphics.Video
 
         private volatile DecoderState state;
 
-        /// <summary>
-        /// The state the decoder is currently in.
-        /// </summary>
-
         // libav-context-related
         private AVFormatContext* formatContext;
         private AVStream* stream;
@@ -373,6 +369,7 @@ namespace osu.Framework.Graphics.Video
                     {
                         if (cancellationToken.IsCancellationRequested)
                             return;
+
                         if (decoderCommands.TryDequeue(out var cmd))
                             cmd();
                     }

@@ -34,7 +34,7 @@ namespace osu.Framework.Graphics.Containers
         where T : Drawable
     {
         /// <summary>
-        /// Contructs a <see cref="Container"/> that stores children.
+        /// Constructs a <see cref="Container"/> that stores children.
         /// </summary>
         public Container()
         {
@@ -353,6 +353,15 @@ namespace osu.Framework.Graphics.Containers
         {
             get => base.Padding;
             set => base.Padding = value;
+        }
+
+        /// <summary>
+        /// Whether to use a local vertex batch for rendering. If false, a parenting vertex batch will be used.
+        /// </summary>
+        public new bool ForceLocalVertexBatch
+        {
+            get => base.ForceLocalVertexBatch;
+            set => base.ForceLocalVertexBatch = value;
         }
 
         /// <summary>

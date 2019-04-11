@@ -96,6 +96,18 @@ namespace osu.Framework.Graphics.Containers
             => LoadComponentsAsync(component.Yield(), l => onLoaded?.Invoke(l.Single()), cancellation, scheduler);
 
         /// <summary>
+        /// Loads a future child or grand-child of this <see cref="CompositeDrawable"/> synchronously and immediately. <see cref="Dependencies"/>
+        /// and <see cref="Drawable.Clock"/> are inherited from this <see cref="CompositeDrawable"/>.
+        /// <remarks>
+        /// This is generally useful if already in an asynchronous context and requiring forcefully (pre)loading content without adding it to the hierarchy.
+        /// </remarks>
+        /// </summary>
+        /// <typeparam name="TLoadable">The type of the future future child or grand-child to be loaded.</typeparam>
+        /// <param name="component">The child or grand-child to be loaded.</param>
+        protected void LoadComponent<TLoadable>(TLoadable component) where TLoadable : Drawable
+            => LoadComponents(component.Yield());
+
+        /// <summary>
         /// Loads several future child or grand-child of this <see cref="CompositeDrawable"/> asynchronously. <see cref="Dependencies"/>
         /// and <see cref="Drawable.Clock"/> are inherited from this <see cref="CompositeDrawable"/>.
         ///
@@ -125,11 +137,7 @@ namespace osu.Framework.Graphics.Containers
             var deps = new DependencyContainer(Dependencies);
             deps.CacheValueAs(linkedSource.Token);
 
-            return Task.Factory.StartNew(() =>
-            {
-                foreach (var c in components)
-                    c.Load(Clock, deps);
-            }, linkedSource.Token, TaskCreationOptions.HideScheduler, threaded_scheduler).ContinueWith(t =>
+            return Task.Factory.StartNew(() => loadComponents(components, deps), linkedSource.Token, TaskCreationOptions.HideScheduler, threaded_scheduler).ContinueWith(t =>
             {
                 var exception = t.Exception?.AsSingular();
 
@@ -155,6 +163,32 @@ namespace osu.Framework.Graphics.Containers
                     }
                 });
             }, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Loads several future child or grand-child of this <see cref="CompositeDrawable"/> synchronously and immediately. <see cref="Dependencies"/>
+        /// and <see cref="Drawable.Clock"/> are inherited from this <see cref="CompositeDrawable"/>.
+        /// <remarks>
+        /// This is generally useful if already in an asynchronous context and requiring forcefully (pre)loading content without adding it to the hierarchy.
+        /// </remarks>
+        /// </summary>
+        /// <typeparam name="TLoadable">The type of the future future child or grand-child to be loaded.</typeparam>
+        /// <param name="components">The children or grand-children to be loaded.</param>
+        protected void LoadComponents<TLoadable>(IEnumerable<TLoadable> components) where TLoadable : Drawable
+        {
+            if (game == null)
+                throw new InvalidOperationException($"May not invoke {nameof(LoadComponent)} prior to this {nameof(CompositeDrawable)} being loaded.");
+
+            if (IsDisposed)
+                throw new ObjectDisposedException(ToString());
+
+            loadComponents(components, Dependencies);
+        }
+
+        private void loadComponents<TLoadable>(IEnumerable<TLoadable> components, IReadOnlyDependencyContainer dependencies) where TLoadable : Drawable
+        {
+            foreach (var c in components)
+                c.Load(Clock, dependencies);
         }
 
         [BackgroundDependencyLoader(true)]
@@ -297,6 +331,7 @@ namespace osu.Framework.Graphics.Containers
 
             int i = y.Depth.CompareTo(x.Depth);
             if (i != 0) return i;
+
             return x.ChildID.CompareTo(y.ChildID);
         }
 
@@ -313,6 +348,7 @@ namespace osu.Framework.Graphics.Containers
 
             int i = y.Depth.CompareTo(x.Depth);
             if (i != 0) return i;
+
             return y.ChildID.CompareTo(x.ChildID);
         }
 
@@ -527,7 +563,6 @@ namespace osu.Framework.Graphics.Containers
 
         private void ensureChildMutationAllowed()
         {
-            /*
             switch (LoadState)
             {
                 case LoadState.NotLoaded:
@@ -535,18 +570,20 @@ namespace osu.Framework.Graphics.Containers
                 case LoadState.Loading:
                     if (Thread.CurrentThread != LoadThread)
                         throw new InvalidThreadForChildMutationException(LoadState, "not on the load thread");
+
                     break;
                 case LoadState.Ready:
                     // Allow mutating from the load thread since parenting containers may still be in the loading state
                     if (Thread.CurrentThread != LoadThread && !ThreadSafety.IsUpdateThread)
                         throw new InvalidThreadForChildMutationException(LoadState, "not on the load or update threads");
+
                     break;
                 case LoadState.Loaded:
                     if (!ThreadSafety.IsUpdateThread)
                         throw new InvalidThreadForChildMutationException(LoadState, "not on the update thread");
+
                     break;
             }
-            */
         }
 
         #endregion
@@ -633,6 +670,7 @@ namespace osu.Framework.Graphics.Containers
                     MakeChildDead(child);
                     return true;
                 }
+
                 if (child.RemoveWhenNotAlive)
                 {
                     removeChildByDeath(child);
@@ -721,7 +759,7 @@ namespace osu.Framework.Graphics.Containers
         internal void DisposeChildAsync(Drawable drawable)
         {
             drawable.UnbindAllBindables();
-            Task.Run(() => drawable.Dispose());
+            Task.Run(drawable.Dispose);
         }
 
         internal override void UpdateClock(IFrameBasedClock clock)
@@ -902,8 +940,7 @@ namespace osu.Framework.Graphics.Containers
 
         #region DrawNode
 
-        private readonly CompositeDrawNodeSharedData compositeDrawNodeSharedData = new CompositeDrawNodeSharedData();
-        private Shader shader;
+        private IShader shader;
 
         protected override DrawNode CreateDrawNode() => new CompositeDrawNode();
 
@@ -934,13 +971,30 @@ namespace osu.Framework.Graphics.Containers
                 };
 
             n.EdgeEffect = EdgeEffect;
-
             n.ScreenSpaceMaskingQuad = null;
-            n.Shared = compositeDrawNodeSharedData;
-
             n.Shader = shader;
+            n.ForceLocalVertexBatch = ForceLocalVertexBatch;
 
             base.ApplyDrawNode(node);
+        }
+
+        private bool forceLocalVertexBatch;
+
+        /// <summary>
+        /// Whether to use a local vertex batch for rendering. If false, a parenting vertex batch will be used.
+        /// </summary>
+        public bool ForceLocalVertexBatch
+        {
+            get => forceLocalVertexBatch;
+            protected set
+            {
+                if (forceLocalVertexBatch == value)
+                    return;
+
+                forceLocalVertexBatch = value;
+
+                Invalidate(Invalidation.DrawNode);
+            }
         }
 
         /// <summary>
@@ -1052,6 +1106,7 @@ namespace osu.Framework.Graphics.Containers
             {
                 if (base.RemoveCompletedTransforms == value)
                     return;
+
                 base.RemoveCompletedTransforms = value;
 
                 foreach (var c in internalChildren)
@@ -1158,6 +1213,7 @@ namespace osu.Framework.Graphics.Containers
             // Select a cheaper contains method when we don't need rounded edges.
             if (cRadius == 0.0f)
                 return base.Contains(screenSpacePos);
+
             return DrawRectangle.Shrink(cRadius).DistanceSquared(ToLocalSpace(screenSpacePos)) <= cRadius * cRadius;
         }
 
@@ -1521,6 +1577,7 @@ namespace osu.Framework.Graphics.Containers
             {
                 if ((AutoSizeAxes & Axes.X) != 0)
                     throw new InvalidOperationException($"The width of a {nameof(CompositeDrawable)} with {nameof(AutoSizeAxes)} should only be manually set if it is relative to its parent.");
+
                 base.Width = value;
             }
         }
@@ -1538,6 +1595,7 @@ namespace osu.Framework.Graphics.Containers
             {
                 if ((AutoSizeAxes & Axes.Y) != 0)
                     throw new InvalidOperationException($"The height of a {nameof(CompositeDrawable)} with {nameof(AutoSizeAxes)} should only be manually set if it is relative to its parent.");
+
                 base.Height = value;
             }
         }
@@ -1557,6 +1615,7 @@ namespace osu.Framework.Graphics.Containers
             {
                 if ((AutoSizeAxes & Axes.Both) != 0)
                     throw new InvalidOperationException($"The Size of a {nameof(CompositeDrawable)} with {nameof(AutoSizeAxes)} should only be manually set if it is relative to its parent.");
+
                 base.Size = value;
             }
         }

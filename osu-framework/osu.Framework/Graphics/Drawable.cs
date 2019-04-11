@@ -23,9 +23,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using osu.Framework.Configuration;
+using osu.Framework.Bindables;
 using osu.Framework.Development;
 using osu.Framework.Graphics.Cursor;
+using osu.Framework.Graphics.OpenGL;
 using osu.Framework.Input.Bindings;
 using osu.Framework.Input.Events;
 using osu.Framework.Input.States;
@@ -102,6 +103,9 @@ namespace osu.Framework.Graphics
                 OnDispose?.Invoke();
                 OnDispose = null;
 
+                for (int i = 0; i < drawNodes.Length; i++)
+                    drawNodes[i]?.Dispose();
+
                 IsDisposed = true;
             }
         }
@@ -161,6 +165,7 @@ namespace osu.Framework.Graphics
         private void unbindAllBindables()
         {
             if (unbindComplete) return;
+
             unbindComplete = true;
 
             foreach (var type in GetType().EnumerateBaseTypes())
@@ -354,14 +359,15 @@ namespace osu.Framework.Graphics
         /// <see cref="UpdateSubTree"/>. It should be used when a simple action should be performed
         /// at the end of every update call which does not warrant overriding the Drawable.
         /// </summary>
-        public Action<Drawable> OnUpdate;
+        public event Action<Drawable> OnUpdate;
 
         /// <summary>
         /// This event is fired after the <see cref="LoadComplete"/> method is called.
         /// It should be used when a simple action should be performed
         /// when the Drawable is loaded which does not warrant overriding the Drawable.
+        /// This event is automatically cleared after being invoked.
         /// </summary>
-        public Action<Drawable> OnLoadComplete;
+        public event Action<Drawable> OnLoadComplete;
 
         /// <summary>.
         /// Fired after the <see cref="Invalidate(Invalidation, Drawable, bool)"/> method is called.
@@ -937,6 +943,7 @@ namespace osu.Framework.Graphics
             set
             {
                 if (fillMode == value) return;
+
                 fillMode = value;
 
                 Invalidate(Invalidation.DrawSize);
@@ -960,6 +967,7 @@ namespace osu.Framework.Graphics
             set
             {
                 if (shear == value) return;
+
                 if (!Validation.IsFinite(value)) throw new ArgumentException($@"{nameof(Shear)} must be finite, but is {value}.");
 
                 shear = value;
@@ -979,6 +987,7 @@ namespace osu.Framework.Graphics
             set
             {
                 if (value == rotation) return;
+
                 if (!Validation.IsFinite(value)) throw new ArgumentException($@"{nameof(Rotation)} must be finite, but is {value}.");
 
                 rotation = value;
@@ -1012,7 +1021,6 @@ namespace osu.Framework.Graphics
                 Invalidate(Invalidation.MiscGeometry);
             }
         }
-
 
         private Vector2 customOrigin;
 
@@ -1077,7 +1085,6 @@ namespace osu.Framework.Graphics
             }
         }
 
-
         private Anchor anchor = Anchor.TopLeft;
 
         /// <summary>
@@ -1101,7 +1108,6 @@ namespace osu.Framework.Graphics
                 Invalidate(Invalidation.MiscGeometry);
             }
         }
-
 
         private Vector2 customRelativeAnchorPosition;
 
@@ -1272,6 +1278,7 @@ namespace osu.Framework.Graphics
             {
                 if (blending.Equals(value))
                     return;
+
                 blending = value;
 
                 Invalidate(Invalidation.Colour);
@@ -1335,6 +1342,7 @@ namespace osu.Framework.Graphics
             set
             {
                 if (lifetimeStart == value) return;
+
                 lifetimeStart = value;
                 LifetimeChanged?.Invoke(this);
             }
@@ -1349,6 +1357,7 @@ namespace osu.Framework.Graphics
             set
             {
                 if (lifetimeEnd == value) return;
+
                 lifetimeEnd = value;
                 LifetimeChanged?.Invoke(this);
             }
@@ -1458,6 +1467,7 @@ namespace osu.Framework.Graphics
         {
             if (proxy != null)
                 throw new InvalidOperationException("Multiple proxies are not supported.");
+
             return proxy = new ProxyDrawable(this);
         }
 
@@ -1567,7 +1577,7 @@ namespace osu.Framework.Graphics
 
         private Vector2 computeRequiredParentSizeToFit()
         {
-            // Auxilary variables required for the computation
+            // Auxiliary variables required for the computation
             Vector2 ap = AnchorPosition;
             Vector2 rap = RelativeAnchorPosition;
 
@@ -1609,7 +1619,6 @@ namespace osu.Framework.Graphics
         /// </summary>
         internal Vector2 RequiredParentSizeToFit => requiredParentSizeToFitBacking.IsValid ? requiredParentSizeToFitBacking : requiredParentSizeToFitBacking.Value = computeRequiredParentSizeToFit();
 
-
         private static readonly AtomicCounter invalidation_counter = new AtomicCounter();
 
         // Make sure we start out with a value of 1 such that ApplyDrawNode is always called at least once
@@ -1619,7 +1628,7 @@ namespace osu.Framework.Graphics
         /// Invalidates draw matrix and autosize caches.
         /// <para>
         /// This does not ensure that the parent containers have been updated before us, thus operations involving
-        /// parent states (e.g. <see cref="DrawInfo"/>) should not be executed in an overriden implementation.
+        /// parent states (e.g. <see cref="DrawInfo"/>) should not be executed in an overridden implementation.
         /// </para>
         /// </summary>
         /// <returns>If the invalidate was actually necessary.</returns>
@@ -1685,12 +1694,12 @@ namespace osu.Framework.Graphics
 
         #region DrawNode
 
-        private readonly DrawNode[] drawNodes = new DrawNode[3];
+        private readonly DrawNode[] drawNodes = new DrawNode[GLWrapper.MAX_DRAW_NODES];
 
         /// <summary>
         /// Generates the <see cref="DrawNode"/> for ourselves.
         /// </summary>
-        /// <param name="frame">The frame which the <see cref="DrawNode"/> subtree should be generated for.</param>
+        /// <param name="frame">The frame which the <see cref="DrawNode"/> sub-tree should be generated for.</param>
         /// <param name="treeIndex">The index of the <see cref="DrawNode"/> to use.</param>
         /// <param name="forceNewDrawNode">Whether the creation of a new <see cref="DrawNode"/> should be forced, rather than re-using an existing <see cref="DrawNode"/>.</param>
         /// <returns>A complete and updated <see cref="DrawNode"/>, or null if the <see cref="DrawNode"/> would be invisible.</returns>
@@ -1780,40 +1789,28 @@ namespace osu.Framework.Graphics
         /// </summary>
         /// <param name="input">A vector in local coordinates.</param>
         /// <returns>The vector in screen coordinates.</returns>
-        public Vector2 ToScreenSpace(Vector2 input)
-        {
-            return Vector2Extensions.Transform(input, DrawInfo.Matrix);
-        }
+        public Vector2 ToScreenSpace(Vector2 input) => Vector2Extensions.Transform(input, DrawInfo.Matrix);
 
         /// <summary>
         /// Accepts a rectangle in local coordinates and converts it to a quad in screen space.
         /// </summary>
         /// <param name="input">A rectangle in local coordinates.</param>
         /// <returns>The quad in screen coordinates.</returns>
-        public Quad ToScreenSpace(RectangleF input)
-        {
-            return Quad.FromRectangle(input) * DrawInfo.Matrix;
-        }
+        public Quad ToScreenSpace(RectangleF input) => Quad.FromRectangle(input) * DrawInfo.Matrix;
 
         /// <summary>
         /// Accepts a vector in screen coordinates and converts it to coordinates in local space.
         /// </summary>
         /// <param name="screenSpacePos">A vector in screen coordinates.</param>
         /// <returns>The vector in local coordinates.</returns>
-        public Vector2 ToLocalSpace(Vector2 screenSpacePos)
-        {
-            return Vector2Extensions.Transform(screenSpacePos, DrawInfo.MatrixInverse);
-        }
+        public Vector2 ToLocalSpace(Vector2 screenSpacePos) => Vector2Extensions.Transform(screenSpacePos, DrawInfo.MatrixInverse);
 
         /// <summary>
         /// Accepts a quad in screen coordinates and converts it to coordinates in local space.
         /// </summary>
         /// <param name="screenSpaceQuad">A quad in screen coordinates.</param>
         /// <returns>The quad in local coordinates.</returns>
-        public Quad ToLocalSpace(Quad screenSpaceQuad)
-        {
-            return screenSpaceQuad * DrawInfo.MatrixInverse;
-        }
+        public Quad ToLocalSpace(Quad screenSpaceQuad) => screenSpaceQuad * DrawInfo.MatrixInverse;
 
         #endregion
 
@@ -2064,7 +2061,7 @@ namespace osu.Framework.Graphics
         public virtual bool RequestsFocus => false;
 
         /// <summary>
-        /// If true, we will gain focus (receiving priority on keybaord input) (and receive an <see cref="OnFocus"/> event) on returning true in <see cref="OnClick"/>.
+        /// If true, we will gain focus (receiving priority on keyboard input) (and receive an <see cref="OnFocus"/> event) on returning true in <see cref="OnClick"/>.
         /// </summary>
         public virtual bool AcceptsFocus => false;
 
@@ -2084,7 +2081,7 @@ namespace osu.Framework.Graphics
         /// given screen-space position.
         /// </summary>
         /// <param name="screenSpacePos">The screen-space position where input could be received.</param>
-        /// <returns>True iff input is received at the given screen-space position.</returns>
+        /// <returns>True if input is received at the given screen-space position.</returns>
         public virtual bool ReceivePositionalInputAt(Vector2 screenSpacePos) => Contains(screenSpacePos);
 
         /// <summary>

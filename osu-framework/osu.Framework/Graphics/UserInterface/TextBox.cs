@@ -15,7 +15,7 @@ using osuTK.Graphics;
 using osuTK.Input;
 using osu.Framework.Allocation;
 using osu.Framework.Audio;
-using osu.Framework.Configuration;
+using osu.Framework.Bindables;
 using osu.Framework.Extensions.Color4Extensions;
 using osu.Framework.Platform;
 using osu.Framework.Graphics.Shapes;
@@ -64,11 +64,34 @@ namespace osu.Framework.Graphics.UserInterface
         /// </summary>
         public virtual bool HandleLeftRightArrows => true;
 
-        protected virtual Color4 BackgroundCommit => new Color4(249, 90, 255, 200);
-        protected virtual Color4 BackgroundFocused => new Color4(100, 100, 100, 255);
-        protected virtual Color4 BackgroundUnfocused => new Color4(100, 100, 100, 120);
+        private Color4 backgroundFocused = new Color4(100, 100, 100, 255);
+        private Color4 backgroundUnfocused = new Color4(100, 100, 100, 120);
+
+        protected Color4 BackgroundCommit { get; set; } = new Color4(249, 90, 255, 200);
+
+        protected Color4 BackgroundFocused
+        {
+            get => backgroundFocused;
+            set
+            {
+                backgroundFocused = value;
+                updateFocus();
+            }
+        }
+
+        protected Color4 BackgroundUnfocused
+        {
+            get => backgroundUnfocused;
+            set
+            {
+                backgroundUnfocused = value;
+                updateFocus();
+            }
+        }
 
         protected virtual Color4 SelectionColour => new Color4(249, 90, 255, 255);
+
+        protected virtual Color4 InputErrorColour => Color4.Red;
 
         /// <summary>
         /// Check if a character can be added to this TextBox.
@@ -125,7 +148,7 @@ namespace osu.Framework.Graphics.UserInterface
                 },
             };
 
-            Current.ValueChanged += newValue => { Text = newValue; };
+            Current.ValueChanged += e => { Text = e.NewValue; };
         }
 
         [BackgroundDependencyLoader]
@@ -167,6 +190,8 @@ namespace osu.Framework.Graphics.UserInterface
             cursorAndLayout.Invalidate();
         }
 
+        private void updateFocus() => Background.FadeColour(HasFocus ? BackgroundFocused : BackgroundUnfocused, Background.IsLoaded ? 200 : 0);
+
         protected override void Dispose(bool isDisposing)
         {
             OnCommit = null;
@@ -184,7 +209,7 @@ namespace osu.Framework.Graphics.UserInterface
         {
             const float cursor_width = 3;
 
-            Placeholder.TextSize = CalculatedTextSize;
+            Placeholder.Font = Placeholder.Font.With(size: CalculatedTextSize);
 
             textUpdateScheduler.Update();
 
@@ -253,6 +278,7 @@ namespace osu.Framework.Graphics.UserInterface
             {
                 if (index < text.Length)
                     return TextFlow.Children[index].DrawPosition.X + TextFlow.DrawPosition.X;
+
                 var d = TextFlow.Children[index - 1];
                 return d.DrawPosition.X + d.DrawSize.X + TextFlow.Spacing.X + TextFlow.DrawPosition.X;
             }
@@ -269,6 +295,7 @@ namespace osu.Framework.Graphics.UserInterface
             {
                 if (d.DrawPosition.X + d.DrawSize.X / 2 > pos.X)
                     break;
+
                 i++;
             }
 
@@ -462,7 +489,7 @@ namespace osu.Framework.Graphics.UserInterface
             return true;
         }
 
-        protected virtual Drawable GetDrawableCharacter(char c) => new SpriteText { Text = c.ToString(), TextSize = CalculatedTextSize };
+        protected virtual Drawable GetDrawableCharacter(char c) => new SpriteText { Text = c.ToString(), Font = new FontUsage(size: CalculatedTextSize) };
 
         protected virtual Drawable AddCharacterToFlow(char c)
         {
@@ -541,9 +568,9 @@ namespace osu.Framework.Graphics.UserInterface
         private void notifyInputError()
         {
             if (Background.Alpha > 0)
-                Background.FlashColour(Color4.Red, 200);
+                Background.FlashColour(InputErrorColour, 200);
             else
-                TextFlow.FlashColour(Color4.Red, 200);
+                TextFlow.FlashColour(InputErrorColour, 200);
         }
 
         protected virtual SpriteText CreatePlaceholder() => new SpriteText
@@ -559,7 +586,7 @@ namespace osu.Framework.Graphics.UserInterface
             set => Placeholder.Text = value;
         }
 
-        private readonly Bindable<string> current = new Bindable<string>();
+        private readonly Bindable<string> current = new Bindable<string>(string.Empty);
 
         public Bindable<string> Current
         {
@@ -831,7 +858,6 @@ namespace osu.Framework.Graphics.UserInterface
 
             Caret.ClearTransforms();
             Caret.FadeOut(200);
-
 
             Background.ClearTransforms();
             Background.FadeColour(BackgroundUnfocused, 200, Easing.OutExpo);

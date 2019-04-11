@@ -9,7 +9,7 @@ namespace osu.Framework.Platform.Windows
 {
     public class WindowsGameHost : DesktopGameHost
     {
-        private readonly TimePeriod timePeriod;
+        private TimePeriod timePeriod;
 
         public override Clipboard GetClipboard() => new WindowsClipboard();
 
@@ -17,30 +17,25 @@ namespace osu.Framework.Platform.Windows
 
         public override bool CapsLockEnabled => Console.CapsLock;
 
-        internal WindowsGameHost(string gameName, bool bindIPC = false, ToolkitOptions toolkitOptions = default)
-            : base(gameName, bindIPC, toolkitOptions)
+        internal WindowsGameHost(string gameName, bool bindIPC = false, ToolkitOptions toolkitOptions = default, bool portableInstallation = false)
+            : base(gameName, bindIPC, toolkitOptions, portableInstallation)
         {
+        }
+
+        protected override void SetupForRun()
+        {
+            base.SetupForRun();
+
             // OnActivate / OnDeactivate may not fire, so the initial activity state may be unknown here.
             // In order to be certain we have the correct activity state we are querying the Windows API here.
 
             timePeriod = new TimePeriod(1) { Active = true };
 
             Window = new WindowsGameWindow();
-            Window.WindowStateChanged += onWindowOnWindowStateChanged;
-        }
-
-        private void onWindowOnWindowStateChanged(object sender, EventArgs e)
-        {
-            if (Window.WindowState != WindowState.Minimized)
-                OnActivated();
-            else
-                OnDeactivated();
         }
 
         protected override void Dispose(bool isDisposing)
         {
-            Window.WindowStateChanged -= onWindowOnWindowStateChanged;
-
             timePeriod?.Dispose();
             base.Dispose(isDisposing);
         }

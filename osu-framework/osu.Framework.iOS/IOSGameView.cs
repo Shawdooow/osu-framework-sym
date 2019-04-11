@@ -24,7 +24,8 @@ namespace osu.Framework.iOS
         public static Class LayerClass() => GetLayerClass();
 
         [Export("initWithFrame:")]
-        public IOSGameView(System.Drawing.RectangleF frame) : base(frame)
+        public IOSGameView(System.Drawing.RectangleF frame)
+            : base(frame)
         {
             Scale = (float)UIScreen.MainScreen.Scale;
             ContentScaleFactor = UIScreen.MainScreen.Scale;
@@ -47,6 +48,7 @@ namespace osu.Framework.iOS
 
         // SafeAreaInsets is cached to prevent access outside the main thread
         private UIEdgeInsets safeArea = UIEdgeInsets.Zero;
+
         internal UIEdgeInsets SafeArea
         {
             get => safeArea;
@@ -103,6 +105,10 @@ namespace osu.Framework.iOS
             public const int CURSOR_POSITION = 5;
 
             private int responderSemaphore;
+
+            public override UITextSmartDashesType SmartDashesType => UITextSmartDashesType.No;
+            public override UITextSmartInsertDeleteType SmartInsertDeleteType => UITextSmartInsertDeleteType.No;
+            public override UITextSmartQuotesType SmartQuotesType => UITextSmartQuotesType.No;
 
             public DummyTextField()
             {

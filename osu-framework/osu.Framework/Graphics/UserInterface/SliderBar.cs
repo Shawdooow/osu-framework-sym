@@ -2,7 +2,7 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using osu.Framework.Configuration;
+using osu.Framework.Bindables;
 using osu.Framework.Graphics.Containers;
 using osuTK.Input;
 using osuTK;
@@ -69,18 +69,16 @@ namespace osu.Framework.Graphics.UserInterface
 
             currentNumberInstantaneous = CurrentNumber.GetUnboundCopy();
 
-            CurrentNumber.ValueChanged += v => currentNumberInstantaneous.Value = v;
+            CurrentNumber.ValueChanged += e => currentNumberInstantaneous.Value = e.NewValue;
             CurrentNumber.MinValueChanged += v => currentNumberInstantaneous.MinValue = v;
             CurrentNumber.MaxValueChanged += v => currentNumberInstantaneous.MaxValue = v;
             CurrentNumber.PrecisionChanged += v => currentNumberInstantaneous.Precision = v;
             CurrentNumber.DisabledChanged += v => currentNumberInstantaneous.Disabled = v;
 
-            currentNumberInstantaneous.ValueChanged += v =>
+            currentNumberInstantaneous.ValueChanged += e =>
             {
-                if (TransferValueOnCommit)
-                    uncommittedChanges = true;
-                else
-                    CurrentNumber.Value = v;
+                if (!TransferValueOnCommit)
+                    CurrentNumber.Value = e.NewValue;
             };
         }
 
@@ -135,12 +133,14 @@ namespace osu.Framework.Graphics.UserInterface
 
         protected override bool OnDragStart(DragStartEvent e)
         {
+            handleMouseInput(e);
             Vector2 posDiff = e.MouseDownPosition - e.MousePosition;
             return Math.Abs(posDiff.X) > Math.Abs(posDiff.Y);
         }
 
         protected override bool OnDragEnd(DragEndEvent e)
         {
+            handleMouseInput(e);
             commit();
             return true;
         }
@@ -157,11 +157,11 @@ namespace osu.Framework.Graphics.UserInterface
             {
                 case Key.Right:
                     currentNumberInstantaneous.Add(step);
-                    OnUserChange(currentNumberInstantaneous);
+                    onUserChange(currentNumberInstantaneous.Value);
                     return true;
                 case Key.Left:
                     currentNumberInstantaneous.Add(-step);
-                    OnUserChange(currentNumberInstantaneous);
+                    onUserChange(currentNumberInstantaneous.Value);
                     return true;
                 default:
                     return false;
@@ -172,6 +172,7 @@ namespace osu.Framework.Graphics.UserInterface
         {
             if (e.Key == Key.Left || e.Key == Key.Right)
                 return commit();
+
             return false;
         }
 
@@ -191,10 +192,17 @@ namespace osu.Framework.Graphics.UserInterface
         {
             var xPosition = ToLocalSpace(e.ScreenSpaceMousePosition).X - RangePadding;
 
-            if (!currentNumberInstantaneous.Disabled)
-                currentNumberInstantaneous.SetProportional(xPosition / UsableWidth, e.ShiftPressed ? KeyboardStep : 0);
+            if (currentNumberInstantaneous.Disabled)
+                return;
 
-            OnUserChange(currentNumberInstantaneous);
+            currentNumberInstantaneous.SetProportional(xPosition / UsableWidth, e.ShiftPressed ? KeyboardStep : 0);
+            onUserChange(currentNumberInstantaneous.Value);
+        }
+
+        private void onUserChange(T value)
+        {
+            uncommittedChanges = true;
+            OnUserChange(value);
         }
 
         /// <summary>

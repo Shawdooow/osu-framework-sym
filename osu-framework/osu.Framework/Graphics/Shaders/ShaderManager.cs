@@ -11,7 +11,7 @@ using osuTK.Graphics.ES30;
 
 namespace osu.Framework.Graphics.Shaders
 {
-    public class ShaderManager
+    public class ShaderManager : IDisposable
     {
         private const string shader_prefix = @"sh_";
 
@@ -45,6 +45,7 @@ namespace osu.Framework.Graphics.Shaders
                 name = shader_prefix + name;
             if (name.EndsWith(ending, StringComparison.Ordinal))
                 return name;
+
             return name + ending;
         }
 
@@ -66,7 +67,7 @@ namespace osu.Framework.Graphics.Shaders
             return part;
         }
 
-        public Shader Load(string vertex, string fragment, bool continuousCompilation = false)
+        public IShader Load(string vertex, string fragment, bool continuousCompilation = false)
         {
             var tuple = (vertex, fragment);
 
@@ -81,7 +82,7 @@ namespace osu.Framework.Graphics.Shaders
 
             shader = new Shader($"{vertex}/{fragment}", parts);
 
-            if (!shader.Loaded)
+            if (!shader.IsLoaded)
             {
                 StringBuilder logContents = new StringBuilder();
                 logContents.AppendLine($@"Loading shader {vertex}/{fragment}");
@@ -95,6 +96,30 @@ namespace osu.Framework.Graphics.Shaders
 
             return shader;
         }
+
+        #region Disposal
+
+        ~ShaderManager()
+        {
+            Dispose(false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            foreach (var kvp in partCache)
+                kvp.Value.Dispose();
+
+            foreach (var kvp in shaderCache)
+                kvp.Value.Dispose();
+        }
+
+        #endregion
     }
 
     public static class VertexShaderDescriptor

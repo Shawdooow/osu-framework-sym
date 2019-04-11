@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using osu.Framework.Bindables;
 using osu.Framework.Configuration;
 using osu.Framework.Extensions;
 using osu.Framework.Input;
@@ -28,8 +29,6 @@ namespace osu.Framework.Platform
 
         private DisplayDevice lastFullscreenDisplay;
         private bool inWindowModeTransition;
-
-        public readonly Bindable<WindowMode> WindowMode = new Bindable<WindowMode>();
 
         public readonly Bindable<ConfineMouseMode> ConfineMouseMode = new Bindable<ConfineMouseMode>();
 
@@ -58,6 +57,13 @@ namespace osu.Framework.Platform
 
         public override IEnumerable<DisplayResolution> AvailableResolutions => CurrentDisplay.AvailableResolutions;
 
+        protected override IEnumerable<WindowMode> DefaultSupportedWindowModes => new[]
+        {
+            Configuration.WindowMode.Windowed,
+            Configuration.WindowMode.Borderless,
+            Configuration.WindowMode.Fullscreen,
+        };
+
         protected DesktopGameWindow()
             : base(default_width, default_height)
         {
@@ -73,10 +79,10 @@ namespace osu.Framework.Platform
         {
             config.BindWith(FrameworkSetting.SizeFullscreen, sizeFullscreen);
 
-            sizeFullscreen.ValueChanged += newSize =>
+            sizeFullscreen.ValueChanged += e =>
             {
                 if (WindowState == WindowState.Fullscreen)
-                    ChangeResolution(CurrentDisplay, newSize);
+                    ChangeResolution(CurrentDisplay, e.NewValue);
             };
 
             sizeWindowed.ValueChanged += newSize =>
@@ -110,10 +116,10 @@ namespace osu.Framework.Platform
                 return;
 
             var newResolution = display.AvailableResolutions
-                                              .Where(r => r.Width == newSize.Width && r.Height == newSize.Height)
-                                              .OrderByDescending(r => r.RefreshRate)
-                                              .ThenByDescending(r => r.BitsPerPixel)
-                                              .FirstOrDefault();
+                                       .Where(r => r.Width == newSize.Width && r.Height == newSize.Height)
+                                       .OrderByDescending(r => r.RefreshRate)
+                                       .ThenByDescending(r => r.BitsPerPixel)
+                                       .FirstOrDefault();
 
             if (newResolution == null)
             {
@@ -137,6 +143,8 @@ namespace osu.Framework.Platform
             {
                 case Configuration.WindowMode.Windowed:
                     sizeWindowed.Value = ClientSize;
+                    if (sizeWindowed.Value != ClientSize)
+                        ClientSize = sizeWindowed.Value;
                     break;
             }
         }
@@ -144,6 +152,7 @@ namespace osu.Framework.Platform
         protected void OnMove(object sender, EventArgs e)
         {
             if (inWindowModeTransition) return;
+
             if (WindowMode.Value == Configuration.WindowMode.Windowed)
             {
                 // Values are clamped to a range of [-0.5, 1.5], so if more than half of the window was
@@ -156,13 +165,13 @@ namespace osu.Framework.Platform
             windowDisplayIndex.Value = CurrentDisplay.GetIndex();
         }
 
-        private void windowDisplayIndexChanged(DisplayIndex index) => CurrentDisplay = DisplayDevice.GetDisplay(index);
+        private void windowDisplayIndexChanged(ValueChangedEvent<DisplayIndex> args) => CurrentDisplay = DisplayDevice.GetDisplay(args.NewValue);
 
-        private void confineMouseModeChanged(ConfineMouseMode newValue)
+        private void confineMouseModeChanged(ValueChangedEvent<ConfineMouseMode> args)
         {
             bool confine = false;
 
-            switch (newValue)
+            switch (args.NewValue)
             {
                 case Input.ConfineMouseMode.Fullscreen:
                     confine = WindowMode.Value != Configuration.WindowMode.Windowed;
@@ -184,7 +193,7 @@ namespace osu.Framework.Platform
             Position = new Vector2(0.5f);
         }
 
-        private void windowModeChanged(WindowMode newMode) => UpdateWindowMode(newMode);
+        private void windowModeChanged(ValueChangedEvent<WindowMode> args) => UpdateWindowMode(args.NewValue);
 
         protected virtual void UpdateWindowMode(WindowMode newMode)
         {
@@ -196,7 +205,7 @@ namespace osu.Framework.Platform
                 switch (newMode)
                 {
                     case Configuration.WindowMode.Fullscreen:
-                        ChangeResolution(currentDisplay, sizeFullscreen);
+                        ChangeResolution(currentDisplay, sizeFullscreen.Value);
                         lastFullscreenDisplay = currentDisplay;
 
                         WindowState = WindowState.Fullscreen;
@@ -224,7 +233,7 @@ namespace osu.Framework.Platform
                         WindowBorder = WindowBorder.Resizable;
 
                         ClientSize = newSize;
-                        Position = new Vector2((float)windowPositionX, (float)windowPositionY);
+                        Position = new Vector2((float)windowPositionX.Value, (float)windowPositionY.Value);
                         break;
                 }
             }
@@ -258,7 +267,7 @@ namespace osu.Framework.Platform
                 var relativeLocation = new Point(Location.X - display.Bounds.X, Location.Y - display.Bounds.Y);
 
                 return new Vector2(
-                    display.Width  > Size.Width  ? (float)relativeLocation.X / (display.Width  - Size.Width)  : 0,
+                    display.Width > Size.Width ? (float)relativeLocation.X / (display.Width - Size.Width) : 0,
                     display.Height > Size.Height ? (float)relativeLocation.Y / (display.Height - Size.Height) : 0);
             }
             set
@@ -270,22 +279,6 @@ namespace osu.Framework.Platform
                     (int)Math.Round((display.Height - Size.Height) * value.Y));
 
                 Location = new Point(relativeLocation.X + display.Bounds.X, relativeLocation.Y + display.Bounds.Y);
-            }
-        }
-
-        public override void CycleMode()
-        {
-            switch (WindowMode.Value)
-            {
-                case Configuration.WindowMode.Windowed:
-                    WindowMode.Value = Configuration.WindowMode.Borderless;
-                    break;
-                case Configuration.WindowMode.Borderless:
-                    WindowMode.Value = Configuration.WindowMode.Fullscreen;
-                    break;
-                default:
-                    WindowMode.Value = Configuration.WindowMode.Windowed;
-                    break;
             }
         }
 
