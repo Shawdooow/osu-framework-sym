@@ -96,7 +96,7 @@ namespace Sym.Networking.NetworkingHandlers.Peer
 
             restart:
 
-            CheckQue(TcpNetworkingClient.TcpClient, TcpNetworkingClient.NextPacketSize, out int s);
+            CheckQueue(TcpNetworkingClient.TcpClient, TcpNetworkingClient.NextPacketSize, out int s);
             TcpNetworkingClient.NextPacketSize = s;
 
             if (read()) goto restart;
@@ -105,7 +105,7 @@ namespace Sym.Networking.NetworkingHandlers.Peer
 
             bool read()
             {
-                if (TcpNetworkingClient.Available >= TcpNetworkingClient.NextPacketSize)
+                if (TcpNetworkingClient.NextPacketSize > 0 && TcpNetworkingClient.Available >= TcpNetworkingClient.NextPacketSize)
                 {
                     packets.Add(new PacketInfo<T>(Host, TcpNetworkingClient.GetPacket()));
                     return true;
@@ -113,13 +113,6 @@ namespace Sym.Networking.NetworkingHandlers.Peer
 
                 return false;
             }
-        }
-
-        protected override Packet SignPacket(Packet packet)
-        {
-            if (packet is ConnectPacket c)
-                c.Gamekey = Gamekey;
-            return packet;
         }
 
         #endregion

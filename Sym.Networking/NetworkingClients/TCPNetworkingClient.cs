@@ -114,26 +114,26 @@ namespace Sym.Networking.NetworkingClients
         /// Receive a packet
         /// </summary>
         /// <returns></returns>
-        public virtual Packet GetPacket(TcpClient client)
+        public virtual Packet GetPacket(NetworkStream stream, int size)
         {
-            using (MemoryStream stream = new MemoryStream())
+            using (MemoryStream mem = new MemoryStream())
             {
-                byte[] data = GetBytes(client, NextPacketSize);
-                stream.Write(data, 0, data.Length);
-                stream.Position = 0;
+                byte[] data = GetBytes(stream, size);
+                mem.Write(data, 0, data.Length);
+                mem.Position = 0;
 
                 NextPacketSize = 0;
 
                 BinaryFormatter formatter = new BinaryFormatter();
 
-                if (formatter.Deserialize(stream) is Packet packet)
+                if (formatter.Deserialize(mem) is Packet packet)
                     return packet;
 
                 throw new NullReferenceException("Whatever we recieved isnt a packet!");
             }
         }
 
-        public override Packet GetPacket() => GetPacket(TcpClient);
+        public override Packet GetPacket() => GetPacket(NetworkStream, NextPacketSize);
 
         public override void SendBytes(byte[] bytes, IPEndPoint end)
         {
@@ -166,9 +166,9 @@ namespace Sym.Networking.NetworkingClients
                         Array.Reverse(intBytes);
                     byte[] result = intBytes;
 
+                    //Tell them how big the packet is
                     stream.Write(result, 0, 4);
-
-                    //TODO: Determine if an offset of 4 is needed
+                    //Send them the packet now
                     stream.Write(data, 0, data.Length);
 
                     string address = e != null ? e.ToString() : EndPoint.ToString();
@@ -181,12 +181,12 @@ namespace Sym.Networking.NetworkingClients
             }
         }
 
-        public override byte[] GetBytes() => GetBytes(TcpClient, NextPacketSize);
+        public override byte[] GetBytes() => GetBytes(NetworkStream, NextPacketSize);
 
-        public virtual byte[] GetBytes(TcpClient client, int s)
+        public virtual byte[] GetBytes(NetworkStream stream, int s)
         {
             byte[] data = new byte[s];
-            client.GetStream().Read(data, 0, data.Length);
+            stream.Read(data, 0, data.Length);
 
             return data;
         }

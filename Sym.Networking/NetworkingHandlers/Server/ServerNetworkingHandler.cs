@@ -135,7 +135,7 @@ namespace Sym.Networking.NetworkingHandlers.Server
             {
                 restart:
 
-                CheckQue(t.TcpClient, t.NextPacketSize, out int s);
+                CheckQueue(t.TcpClient, t.NextPacketSize, out int s);
                 t.NextPacketSize = s;
 
                 if (read(t)) goto restart;
@@ -145,22 +145,15 @@ namespace Sym.Networking.NetworkingHandlers.Server
 
             bool read(T t)
             {
-                if (t.TcpClient.Available >= t.NextPacketSize)
+                if (t.NextPacketSize > 0 && t.TcpClient.Available >= t.NextPacketSize)
                 {
-                    packets.Add(new PacketInfo<T>(t, TcpNetworkingClient.GetPacket(t.TcpClient)));
+                    packets.Add(new PacketInfo<T>(t, TcpNetworkingClient.GetPacket(t.TcpClient.GetStream(), t.NextPacketSize)));
                     t.NextPacketSize = 0;
                     return true;
                 }
 
                 return false;
             }
-        }
-
-        protected override Packet SignPacket(Packet packet)
-        { 
-            if (packet is ConnectPacket c)
-                c.Gamekey = Gamekey;
-            return packet;
         }
 
         /// <summary>
