@@ -36,10 +36,49 @@ namespace osu.Framework.Development
         private static readonly ThreadLocal<bool> is_audio_thread = new ThreadLocal<bool>(() =>
             Thread.CurrentThread.Name == GameThread.PrefixedThreadNameFor("Audio"));
 
-        public static bool IsUpdateThread => is_update_thread?.Value ?? false;
+        public static bool IsUpdateThread
+        {
+            get
+            {
+                try
+                {
+                    return is_update_thread?.Value ?? false;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
 
-        public static bool IsDrawThread => is_draw_thread?.Value ?? false;
+        public static bool IsDrawThread
+        {
+            get
+            {
+                try
+                {
+                    return is_draw_thread?.Value ?? false;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
 
-        public static bool IsAudioThread => is_audio_thread?.Value ?? false;
+        public static bool IsAudioThread
+        {
+            get
+            {
+                try
+                {
+                    return is_audio_thread?.Value ?? false;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
     }
 }
