@@ -70,7 +70,7 @@ namespace Sym.Networking.NetworkingClients
         /// <summary>
         /// Send a packet
         /// </summary>
-        /// <param name="t"></param>
+        /// <param name="packet"></param>
         /// <param name="end"></param>
         public virtual void SendPacket(Packet packet, IPEndPoint end = null)
         {
@@ -81,7 +81,7 @@ namespace Sym.Networking.NetworkingClients
 
                 stream.Position = 0;
 
-                uint i = packet.PacketSize;
+                int i = packet.PacketSize;
                 retry:
                 byte[] data = new byte[i];
 

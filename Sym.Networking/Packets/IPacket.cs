@@ -8,6 +8,6 @@ namespace Sym.Networking.Packets
 {
     public interface IPacket : ISerializable
     {
-        uint PacketSize { get; }
+        int PacketSize { get; }
     }
 }

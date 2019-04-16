@@ -21,13 +21,16 @@ namespace Sym.Networking.NetworkingClients
 {
     public class TcpNetworkingClient : NetworkingClient
     {
+        //TODO: make not const
         public const int BUFFER_SIZE = 8192 * 256;
 
-        public const int PACKET_SIZE = BUFFER_SIZE / 16;
+        //TODO: make not const
+        public const int MAX_PACKET_SIZE = BUFFER_SIZE / 16;
 
+        //TODO: make not const
         public const int TIMEOUT = 60000;
 
-        protected readonly TcpClient TcpClient;
+        protected internal readonly TcpClient TcpClient;
 
         protected internal NetworkStream NetworkStream => TcpClient.GetStream();
 
@@ -51,6 +54,8 @@ namespace Sym.Networking.NetworkingClients
                 }
             }
         }
+
+        public int NextPacketSize { get; protected internal set; }
 
         public TcpNetworkingClient(string address)
             : base(address)
@@ -105,23 +110,6 @@ namespace Sym.Networking.NetworkingClients
             AcceptClient();
         });
 
-        public override void SendPacket(Packet packet, IPEndPoint end = null)
-        {
-            using (MemoryStream stream = new MemoryStream())
-            {
-                BinaryFormatter formatter = new BinaryFormatter();
-                formatter.Serialize(stream, packet);
-
-                stream.Position = 0;
-
-                byte[] data = new byte[PACKET_SIZE];
-
-                stream.Read(data, 0, PACKET_SIZE);
-
-                SendBytes(data, end);
-            }
-        }
-
         /// <summary>
         /// Receive a packet
         /// </summary>
@@ -130,10 +118,11 @@ namespace Sym.Networking.NetworkingClients
         {
             using (MemoryStream stream = new MemoryStream())
             {
-                byte[] data = GetBytes(client);
+                byte[] data = GetBytes(client, NextPacketSize);
                 stream.Write(data, 0, data.Length);
-
                 stream.Position = 0;
+
+                NextPacketSize = 0;
 
                 BinaryFormatter formatter = new BinaryFormatter();
 
@@ -172,6 +161,14 @@ namespace Sym.Networking.NetworkingClients
             {
                 try
                 {
+                    byte[] intBytes = BitConverter.GetBytes(data.Length);
+                    if (BitConverter.IsLittleEndian)
+                        Array.Reverse(intBytes);
+                    byte[] result = intBytes;
+
+                    stream.Write(result, 0, 4);
+
+                    //TODO: Determine if an offset of 4 is needed
                     stream.Write(data, 0, data.Length);
 
                     string address = e != null ? e.ToString() : EndPoint.ToString();
@@ -184,11 +181,11 @@ namespace Sym.Networking.NetworkingClients
             }
         }
 
-        public override byte[] GetBytes() => GetBytes(TcpClient);
+        public override byte[] GetBytes() => GetBytes(TcpClient, NextPacketSize);
 
-        public virtual byte[] GetBytes(TcpClient client)
+        public virtual byte[] GetBytes(TcpClient client, int s)
         {
-            byte[] data = new byte[PACKET_SIZE];
+            byte[] data = new byte[s];
             client.GetStream().Read(data, 0, data.Length);
 
             return data;

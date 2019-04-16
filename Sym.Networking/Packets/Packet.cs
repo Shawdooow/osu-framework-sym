@@ -10,6 +10,6 @@ namespace Sym.Networking.Packets
     [Serializable]
     public abstract class Packet
     {
-        public virtual uint PacketSize => 8192;
+        public virtual int PacketSize => 8192;
     }
 }

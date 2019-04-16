@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Sockets;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Timing;
 using Sym.Networking.NetworkingClients;
@@ -149,6 +150,19 @@ namespace Sym.Networking.NetworkingHandlers
         /// </summary>
         /// <param name="packet"></param>
         protected abstract void PacketReceived(PacketInfo<T> packet);
+
+        public bool CheckQue(TcpClient tcp, int next, out int size)
+        {
+            size = next;
+            if (next == 0 && tcp.Available >= 4)
+            {
+                byte[] s = new byte[4];
+                tcp.GetStream().Read(s, 0, 4);
+                size = BitConverter.ToInt32(s, 0);
+            }
+
+            return tcp.Available >= next;
+        }
 
         #endregion
 

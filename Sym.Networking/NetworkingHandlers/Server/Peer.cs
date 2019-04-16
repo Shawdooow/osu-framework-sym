@@ -40,6 +40,8 @@ namespace Sym.Networking.NetworkingHandlers.Server
 
         protected internal TcpClient TcpClient { get; internal set; }
 
+        protected internal int NextPacketSize { get; internal set; }
+
         public Peer(IPEndPoint end)
             : base(end)
         {

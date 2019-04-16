@@ -13,10 +13,13 @@ namespace Sym.Networking.Packets
 
         public readonly Packet Packet;
 
-        public PacketInfo(T client, Packet packet)
+        public readonly bool UDP;
+
+        public PacketInfo(T client, Packet packet, bool udp = false)
         {
             Client = client;
             Packet = packet;
+            UDP = udp;
         }
     }
 }

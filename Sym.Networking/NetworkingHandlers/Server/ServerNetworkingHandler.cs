@@ -131,11 +131,29 @@ namespace Sym.Networking.NetworkingHandlers.Server
         protected override List<PacketInfo<T>> GetPackets()
         {
             List<PacketInfo<T>> packets = new List<PacketInfo<T>>();
-            foreach (T peer in Peers)
-                if (peer.TcpClient.Available >= TcpNetworkingClient.PACKET_SIZE)
-                    packets.Add(new PacketInfo<T>(peer, TcpNetworkingClient.GetPacket(peer.TcpClient)));
+            foreach (T t in Peers)
+            {
+                restart:
+
+                CheckQue(t.TcpClient, t.NextPacketSize, out int s);
+                t.NextPacketSize = s;
+
+                if (read(t)) goto restart;
+            }
 
             return packets;
+
+            bool read(T t)
+            {
+                if (t.TcpClient.Available >= t.NextPacketSize)
+                {
+                    packets.Add(new PacketInfo<T>(t, TcpNetworkingClient.GetPacket(t.TcpClient)));
+                    t.NextPacketSize = 0;
+                    return true;
+                }
+
+                return false;
+            }
         }
 
         protected override Packet SignPacket(Packet packet)
