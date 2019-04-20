@@ -562,7 +562,7 @@ namespace osu.Framework.Graphics.Containers
         }
 
         private void ensureChildMutationAllowed()
-        {/*
+        {
             switch (LoadState)
             {
                 case LoadState.NotLoaded:
@@ -583,7 +583,7 @@ namespace osu.Framework.Graphics.Containers
                         throw new InvalidThreadForChildMutationException(LoadState, "not on the update thread");
 
                     break;
-            }*/
+            }
         }
 
         #endregion
